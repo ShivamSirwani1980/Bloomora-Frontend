@@ -20,16 +20,15 @@ export default function Login() {
   const navigate = useNavigate();
   const { setUser } = useStore();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       const key = CryptoJS.enc.Base64.parse(ENCRYPTION_KEY_BASE64);
-
       let payload: any;
 
       if (isLogin) {
-        // LOGIN → requires IV
+        // LOGIN → Requires IV and normalization
         const ivWordArray = CryptoJS.lib.WordArray.random(16);
         const ivBase64 = CryptoJS.enc.Base64.stringify(ivWordArray);
 
@@ -41,20 +40,15 @@ export default function Login() {
           }).toString();
 
         payload = {
-          email: encryptField(email),
+          // Normalize email to lowercase before encrypting
+          email: encryptField(email.trim().toLowerCase()), 
           password: encryptField(password),
           iv: ivBase64,
         };
       } else {
-        // SIGNUP → no IV required
-        const encryptField = (value: string) =>
-          CryptoJS.AES.encrypt(value, key, {
-            mode: CryptoJS.mode.ECB, // usually used if no IV
-            padding: CryptoJS.pad.Pkcs7,
-          }).toString();
-
+        // SIGNUP → Matches your user_handler.py requirements
         payload = {
-          email: email,
+          email: email.trim().toLowerCase(),
           password: password,
           username: name,
         };
@@ -64,30 +58,41 @@ export default function Login() {
         ? `${import.meta.env.VITE_API_BASE_URL}Login/`
         : `${import.meta.env.VITE_API_BASE_URL}Signup/`;
 
-      const res = await axios.post(url, payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await axios.post(url, payload);
 
-      setUser({
-        id: res.data?.id ?? "1",
-        email,
-        name: res.data?.username || name,
-      });
+      if (isLogin) {
+        // --- DECRYPT LOGIN RESPONSE ---
+        const { encrypted_response, iv: respIv } = res.data;
+        
+        const decryptedBytes = CryptoJS.AES.decrypt(encrypted_response, key, {
+          iv: CryptoJS.enc.Base64.parse(respIv),
+          mode: CryptoJS.mode.CBC,
+          padding: CryptoJS.pad.Pkcs7,
+        });
 
-      toast.success(
-        isLogin ? "Welcome back!" : "Account created successfully!"
-      );
+        const decryptedData = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
 
+        // Set store using the decrypted name
+        setUser({
+          id: decryptedData.data.id,
+          email: decryptedData.data.email,
+          name: decryptedData.data.name, // This fixes the "Welcome, .!" issue
+        });
+      } else {
+        // --- HANDLE SIGNUP RESPONSE ---
+        // Signup returns plain JSON in your current backend setup
+        setUser({
+          id: res.data.data.user_id,
+          email: email.toLowerCase(),
+          name: name, // Uses local state variable
+        });
+      }
+
+      toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
-      toast.error(
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Authentication failed"
-      );
+      toast.error(err.response?.data?.error || "Authentication failed");
     }
   };
 
