@@ -1,13 +1,45 @@
 import { motion } from 'framer-motion';
 import { Copy, CheckCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { coupons } from '@/lib/data';
 import { toast } from 'sonner';
+
+// 🔥 Coupon coming from backend (Mongo fields)
+interface Coupon {
+  id: string;
+  code: string;
+  discount: number;
+  description: string;
+  min_order: number;
+  valid_till: string;
+}
+
+// 🔥 API response structure
+interface OfferResponse {
+  status: number;
+  message: string;
+  data: Coupon[];
+}
 
 export default function Offers() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+
+  // 🔥 Fetch coupons from backend
+  useEffect(() => {
+    axios
+      .get<OfferResponse>(
+        'http://127.0.0.1:8000/api/v1/main/Bloomora/GetAllOffer/'
+      )
+      .then((res) => {
+        console.log('API DATA:', res.data);
+        setCoupons(res.data.data); // ⭐ FIXED
+      })
+      .catch((err) => console.log('API ERROR:', err));
+  }, []);
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -52,7 +84,6 @@ export default function Offers() {
                 transition={{ delay: index * 0.1 }}
                 className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-card to-lavender/5 rounded-3xl p-8 border border-primary/20"
               >
-                {/* Decorative circles */}
                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full" />
                 <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-lavender/10 rounded-full" />
 
@@ -72,10 +103,10 @@ export default function Offers() {
                   </h3>
 
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
-                    {coupon.minOrder > 0 && (
-                      <span>Min. order: ₹{coupon.minOrder}</span>
+                    {coupon.min_order > 0 && (
+                      <span>Min. order: ₹{coupon.min_order}</span>
                     )}
-                    <span>Valid till: {coupon.validTill}</span>
+                    <span>Valid till: {coupon.valid_till}</span>
                   </div>
 
                   <Button
@@ -99,74 +130,6 @@ export default function Offers() {
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Terms */}
-      <section className="section-padding bg-muted/30">
-        <div className="container-custom mx-auto max-w-3xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="font-display text-2xl font-bold text-foreground mb-6 text-center">
-              Terms & Conditions
-            </h2>
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <ul className="space-y-3 text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Coupons can only be applied once per order
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Coupons cannot be combined with other offers
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Minimum order value must be met before applying coupon
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Coupons are auto-applied at checkout when eligible
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Bloomora reserves the right to modify or withdraw offers without prior notice
-                </li>
-              </ul>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Banner */}
-      <section className="section-padding">
-        <div className="container-custom mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="bg-gradient-to-r from-primary via-rose-dark to-lavender rounded-3xl p-12 text-center text-primary-foreground"
-          >
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-              Subscribe for Exclusive Deals
-            </h2>
-            <p className="mb-8 opacity-90 max-w-xl mx-auto">
-              Be the first to know about new arrivals, special offers, and seasonal discounts
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-xl bg-background/10 border border-primary-foreground/30 text-primary-foreground placeholder:text-primary-foreground/60 focus:outline-none focus:border-primary-foreground"
-              />
-              <Button variant="gold" size="lg">
-                Subscribe
-              </Button>
-            </div>
-          </motion.div>
         </div>
       </section>
     </Layout>
