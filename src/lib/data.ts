@@ -192,40 +192,40 @@ export const giftCategories = [
   },
 ];
 
-export const decorationServices = [
-  {
-    id: 'wedding',
-    name: 'Wedding Decoration',
-    icon: '💒',
-    description: 'Transform your wedding venue into a floral paradise',
-    startingPrice: 25000,
-    images: [weddingDecor],
-  },
-  {
-    id: 'engagement',
-    name: 'Engagement Party',
-    icon: '💍',
-    description: 'Create the perfect backdrop for your special moment',
-    startingPrice: 15000,
-    images: [engagementDecor],
-  },
-  {
-    id: 'birthday',
-    name: 'Birthday Celebration',
-    icon: '🎈',
-    description: 'Add floral magic to birthday celebrations',
-    startingPrice: 8000,
-    images: [birthdayDecor],
-  },
-  {
-    id: 'corporate',
-    name: 'Corporate Events',
-    icon: '🏢',
-    description: 'Professional floral arrangements for business events',
-    startingPrice: 20000,
-    images: [corporateDecor],
-  },
-];
+// export const decorationServices = [
+//   {
+//     id: 'wedding',
+//     name: 'Wedding Decoration',
+//     icon: '💒',
+//     description: 'Transform your wedding venue into a floral paradise',
+//     startingPrice: 25000,
+//     images: [weddingDecor],
+//   },
+//   {
+//     id: 'engagement',
+//     name: 'Engagement Party',
+//     icon: '💍',
+//     description: 'Create the perfect backdrop for your special moment',
+//     startingPrice: 15000,
+//     images: [engagementDecor],
+//   },
+//   {
+//     id: 'birthday',
+//     name: 'Birthday Celebration',
+//     icon: '🎈',
+//     description: 'Add floral magic to birthday celebrations',
+//     startingPrice: 8000,
+//     images: [birthdayDecor],
+//   },
+//   {
+//     id: 'corporate',
+//     name: 'Corporate Events',
+//     icon: '🏢',
+//     description: 'Professional floral arrangements for business events',
+//     startingPrice: 20000,
+//     images: [corporateDecor],
+//   },
+// ];
 
 
   // export const coupons = [

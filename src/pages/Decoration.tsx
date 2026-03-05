@@ -3,12 +3,27 @@ import { motion } from 'framer-motion';
 import { Calendar, MapPin, DollarSign, Send, CheckCircle2 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { decorationServices } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import useFetch from '@/hooks/useFetch';
+import axios from 'axios';
+
+const getIconForServiceType = (type: string) => {
+  switch (type?.toLowerCase()) {
+    case 'wedding': return '💒';
+    case 'engagement': return '💍';
+    case 'birthday': return '🎈';
+    case 'corporate': return '🏢';
+    default: return '✨';
+  }
+};
 
 export default function Decoration() {
+  const { data, loading, error } = useFetch<any>(`${import.meta.env.VITE_API_BASE_URL}getAllService/`);
+  const servicesData = data?.data || [];
+
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,20 +35,40 @@ export default function Decoration() {
     requirements: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Thank you! Our team will contact you within 24 hours.');
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      eventType: '',
-      eventDate: '',
-      location: '',
-      budget: '',
-      requirements: '',
-    });
-    setSelectedService(null);
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        full_name: formData.name,
+        email: formData.email,
+        phone_number: formData.phone,
+        event_type: formData.eventType || selectedService,
+        event_date: formData.eventDate,
+        location: formData.location,
+        budget_range: formData.budget,
+        additional_requirements: formData.requirements,
+      };
+
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}BookService/  `, payload);
+
+      toast.success('Thank you! Our team will contact you within 24 hours.');
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        eventType: '',
+        eventDate: '',
+        location: '',
+        budget: '',
+        requirements: '',
+      });
+      setSelectedService(null);
+    } catch (err) {
+      toast.error('Failed to submit request. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -53,7 +88,7 @@ export default function Decoration() {
               Floral <span className="text-gradient">Decoration Services</span>
             </h1>
             <p className="text-muted-foreground text-lg">
-              Turn your special occasions into magical moments with our expert floral 
+              Turn your special occasions into magical moments with our expert floral
               decoration services for weddings, engagements, parties, and corporate events.
             </p>
           </motion.div>
@@ -77,48 +112,62 @@ export default function Decoration() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {decorationServices.map((service, index) => (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className={cn(
-                  'relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300',
-                  selectedService === service.id
-                    ? 'ring-2 ring-primary shadow-elevated'
-                    : 'hover:shadow-card'
-                )}
-                onClick={() => setSelectedService(service.id)}
-              >
-                <div className="aspect-[4/3] relative">
-                  <img
-                    src={service.images[0]}
-                    alt={service.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          {loading && (
+            <div className="text-center py-12 text-muted-foreground">
+              Loading decoration services...
+            </div>
+          )}
 
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 text-white drop-shadow-lg">
+          {error && (
+            <div className="text-center py-12 text-red-500">
+              Failed to load decoration services.
+            </div>
+          )}
 
-                    <span className="text-3xl mb-2">{service.icon}</span>
-                    <h3 className="text-lg font-semibold mb-1">{service.name}</h3>
-                    <p className="text-sm opacity-90 mb-2">{service.description}</p>
-                    <p className="text-sm">
-                      Starting from <span className="font-bold">₹{service.startingPrice.toLocaleString()}</span>
-                    </p>
+          {!loading && !error && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {servicesData.map((service: any, index: number) => (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className={cn(
+                    'relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300',
+                    selectedService === service.id
+                      ? 'ring-2 ring-primary shadow-elevated'
+                      : 'hover:shadow-card'
+                  )}
+                  onClick={() => setSelectedService(service.id)}
+                >
+                  <div className="aspect-[4/3] relative">
+                    <img
+                      src={service.image_url}
+                      alt={service.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+
+                    <div className="absolute inset-0 flex flex-col justify-end p-6 text-white drop-shadow-lg">
+
+                      <span className="text-3xl mb-2">{getIconForServiceType(service.service_type)}</span>
+                      <h3 className="text-lg font-semibold mb-1">{service.title}</h3>
+                      <p className="text-sm opacity-90 mb-2">{service.description}</p>
+                      <p className="text-sm">
+                        Starting from <span className="font-bold">₹{parseInt(service.starting_price || '0').toLocaleString()}</span>
+                      </p>
+                    </div>
                   </div>
-                </div>
-                {selectedService === service.id && (
-                  <div className="absolute top-3 right-3 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
+                  {selectedService === service.id && (
+                    <div className="absolute top-3 right-3 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -200,9 +249,9 @@ export default function Decoration() {
                   className="w-full input-premium"
                 >
                   <option value="">Select event type</option>
-                  {decorationServices.map((service) => (
+                  {servicesData.map((service: any) => (
                     <option key={service.id} value={service.id}>
-                      {service.name}
+                      {service.title}
                     </option>
                   ))}
                 </select>
@@ -269,9 +318,9 @@ export default function Decoration() {
               </div>
             </div>
 
-            <Button variant="hero" size="xl" className="w-full mt-8">
+            <Button variant="hero" size="xl" className="w-full mt-8" disabled={isSubmitting}>
               <Send className="w-5 h-5" />
-              Submit Request
+              {isSubmitting ? 'Submitting...' : 'Submit Request'}
             </Button>
           </motion.form>
         </div>
