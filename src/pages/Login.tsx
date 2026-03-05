@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flower2, Mail, Lock, User } from "lucide-react";
+import { Flower2, Mail, Lock, User, Eye, EyeOff, Calendar } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
@@ -13,23 +14,118 @@ const ENCRYPTION_KEY_BASE64 = import.meta.env.VITE_ENCRYPTION_KEY;
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+
+  // SIGNUP FIELDS
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dob, setDob] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
   const { setUser } = useStore();
 
+  // Calculate the maximum date allowed (Today - 5 years)
+  const todayDate = new Date();
+  const maxDate = new Date(todayDate.getFullYear() - 5, todayDate.getMonth(), todayDate.getDate())
+    .toISOString()
+    .split("T")[0];
+
+  // GOOGLE LOGIN/SIGNUP SUCCESS HANDLER
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    const emailParam = params.get("email");
+    const name = params.get("name");
+
+    if (token && emailParam) {
+      setUser({
+        id: "google-user",
+        email: emailParam,
+        name: name || "User",
+      });
+
+      localStorage.setItem("token", token);
+      toast.success("Login successful!");
+      window.history.replaceState({}, document.title, "/login");
+      navigate("/dashboard");
+    }
+  }, [navigate, setUser]);
+
+  // GOOGLE AUTH
+  const handleGoogleAuth = () => {
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}Google/`;
+  };
+
+  // --- UPDATED VALIDATION LOGIC ---
+  const validateForm = () => {
+    // 1. Email Check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error("Please enter a valid email address.");
+      return false;
+    }
+
+    // 2. Password Check (Min 8 chars)
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters long.");
+      return false;
+    }
+
+    // 3. Signup Specific Checks
+    if (!isLogin) {
+      // Name validation: Only letters, min 2 chars
+      const nameRegex = /^[A-Za-z\s]{2,}$/;
+      
+      if (!nameRegex.test(firstName.trim())) {
+        toast.error("First name must be at least 2 letters (no numbers).");
+        return false;
+      }
+      if (!nameRegex.test(lastName.trim())) {
+        toast.error("Last name must be at least 2 letters (no numbers).");
+        return false;
+      }
+
+      // DOB validation: Minimum 5 years old
+      if (!dob) {
+        toast.error("Please select your date of birth.");
+        return false;
+      }
+
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      
+      // Adjust if birthday hasn't happened yet this year
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age < 5) {
+        toast.error("Registration failed: You must be at least 5 years old.");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // SUBMIT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Trigger validation before proceeding
+    if (!validateForm()) return;
+
     try {
       const key = CryptoJS.enc.Base64.parse(ENCRYPTION_KEY_BASE64);
-
       let payload: any;
 
       if (isLogin) {
-        // LOGIN → requires IV
         const ivWordArray = CryptoJS.lib.WordArray.random(16);
         const ivBase64 = CryptoJS.enc.Base64.stringify(ivWordArray);
 
@@ -41,22 +137,17 @@ export default function Login() {
           }).toString();
 
         payload = {
-          email: encryptField(email),
+          email: encryptField(email.trim().toLowerCase()),
           password: encryptField(password),
           iv: ivBase64,
         };
       } else {
-        // SIGNUP → no IV required
-        const encryptField = (value: string) =>
-          CryptoJS.AES.encrypt(value, key, {
-            mode: CryptoJS.mode.ECB, // usually used if no IV
-            padding: CryptoJS.pad.Pkcs7,
-          }).toString();
-
         payload = {
-          email: email,
-          password: password,
-          username: name,
+          email: email.trim().toLowerCase(),
+          password,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          dob: dob,
         };
       }
 
@@ -64,30 +155,40 @@ export default function Login() {
         ? `${import.meta.env.VITE_API_BASE_URL}Login/`
         : `${import.meta.env.VITE_API_BASE_URL}Signup/`;
 
-      const res = await axios.post(url, payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await axios.post(url, payload);
 
-      setUser({
-        id: res.data?.id ?? "1",
-        email,
-        name: res.data?.username || name,
-      });
+      if (isLogin) {
+        const { encrypted_response, iv: respIv } = res.data;
+        const decryptedBytes = CryptoJS.AES.decrypt(
+          encrypted_response,
+          key,
+          {
+            iv: CryptoJS.enc.Base64.parse(respIv),
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7,
+          }
+        );
 
-      toast.success(
-        isLogin ? "Welcome back!" : "Account created successfully!"
-      );
+        const decryptedData = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
 
+        setUser({
+          id: decryptedData.data.id,
+          email: decryptedData.data.email,
+          name: decryptedData.data.name,
+        });
+      } else {
+        setUser({
+          id: res.data.data.user_id,
+          email: email.toLowerCase(),
+          name: `${firstName} ${lastName}`,
+        });
+      }
+
+      toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
-      toast.error(
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Authentication failed"
-      );
+      toast.error(err.response?.data?.error || "Authentication failed");
     }
   };
 
@@ -100,6 +201,7 @@ export default function Login() {
           className="w-full max-w-md"
         >
           <div className="bg-card rounded-3xl p-8 shadow-elevated border border-border">
+            
             <div className="text-center mb-8">
               <Link to="/" className="inline-flex items-center gap-2 mb-4">
                 <Flower2 className="w-8 h-8 text-primary" />
@@ -107,42 +209,66 @@ export default function Login() {
                   Bloomora
                 </span>
               </Link>
-
               <h1 className="text-2xl font-bold text-foreground">
                 {isLogin ? "Welcome Back" : "Create Account"}
               </h1>
-
               <p className="text-muted-foreground mt-2">
-                {isLogin
-                  ? "Sign in to your account"
-                  : "Join Bloomora today"}
+                {isLogin ? "Sign in to your account" : "Join Bloomora today"}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full input-premium pl-10"
-                      placeholder="Your name"
-                      required
-                    />
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">First Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value.replace(/[^A-Za-z\s]/g, ""))}
+                        className="w-full input-premium pl-10"
+                        placeholder="First name"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Last Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value.replace(/[^A-Za-z\s]/g, ""))}
+                        className="w-full input-premium pl-10"
+                        placeholder="Last name"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">DOB</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <input
+                        type="date"
+                        value={dob}
+                        max={maxDate} // Visually prevents selecting dates < 5 years ago
+                        onChange={(e) => setDob(e.target.value)}
+                        className="w-full input-premium pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Email
-                </label>
+                <label className="block text-sm font-medium mb-2">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <input
@@ -157,31 +283,50 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Password
-                </label>
+                <label className="block text-sm font-medium mb-2">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full input-premium pl-10"
+                    className="w-full input-premium pl-10 pr-10"
                     placeholder="••••••••"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
 
               <Button type="submit" className="w-full">
                 {isLogin ? "Sign In" : "Create Account"}
               </Button>
+
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-sm text-muted-foreground">OR</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleGoogleAuth}
+              >
+                <FcGoogle className="w-5 h-5" />
+                {isLogin ? "Login with Google" : "Sign up with Google"}
+              </Button>
             </form>
 
             <p className="text-center mt-6 text-muted-foreground">
-              {isLogin
-                ? "Don't have an account?"
-                : "Already have an account?"}
+              {isLogin ? "Don't have an account?" : "Already have an account?"}
               <button
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-primary font-medium ml-1 hover:underline"
