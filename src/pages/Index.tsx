@@ -1,13 +1,25 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Truck, Clock, Sparkles, Shield } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowRight, Truck, Clock, Sparkles, Shield, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout/Layout";
-import { products, categories, testimonials, coupons } from "@/lib/data";
+import { products, categories, testimonials } from "@/lib/data";
 import heroImage from "@/assets/hero-flowers.jpg";
 import useFetch from "@/hooks/useFetch";
 import { BestSellingResponse } from "@/lib/store";
 import { ProductCard } from "@/components/ProductCard";
+import { toast } from "sonner";
+
+interface Offer {
+  id: string;
+  discount: string;
+  code: string;
+  description: string;
+  min_order: number;
+  valid_till: string;
+}
+
 
 const features = [
   {
@@ -33,6 +45,29 @@ const features = [
 ];
 
 export default function Index() {
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/v1/main/Bloomora/GetAllOffer/');
+        const data = await response.json();
+        if (data.status === 200) {
+          setOffers(data.data);
+        } else {
+          toast.error(data.message || 'Failed to fetch offers');
+        }
+      } catch (error) {
+        toast.error('Failed to fetch offers');
+      } finally {
+        setOffersLoading(false);
+      }
+    };
+
+    fetchOffers();
+  }, []);
+
 const { data: fetchedProducts, loading, error } =
   useFetch<BestSellingResponse>(
     `${import.meta.env.VITE_API_BASE_URL}Get/BestSelling/`
@@ -331,10 +366,10 @@ const bestSellingProducts =
             >
               <div className="relative rounded-3xl overflow-hidden shadow-elevated">
                 <img
-                  src={products[2].image}
-                  alt="Custom bouquet preview"
-                  className="w-full aspect-[4/3] object-cover"
-                />
+  src={bestSellingProducts[0]?.image || heroImage}
+  alt="Custom bouquet preview"
+  className="w-full aspect-[4/3] object-cover"
+/>
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/40 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6 text-primary-foreground">
                   <p className="text-sm mb-1">Starting from</p>
@@ -506,31 +541,41 @@ const bestSellingProducts =
           </motion.div>
 
           <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
-            {coupons.map((coupon, index) => (
-              <motion.div
-                key={coupon.code}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="min-w-[300px] bg-gradient-to-br from-primary/10 to-lavender/10 rounded-2xl p-6 border border-primary/20"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-3xl font-bold text-primary">
-                    {coupon.discount}% OFF
-                  </span>
-                  <span className="px-3 py-1 bg-primary/10 rounded-full text-primary text-sm font-mono">
-                    {coupon.code}
-                  </span>
-                </div>
-                <p className="text-foreground font-medium mb-2">
-                  {coupon.description}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Min. order: ₹{coupon.minOrder} • Valid till {coupon.validTill}
-                </p>
-              </motion.div>
-            ))}
+            {offersLoading ? (
+              <div className="w-full flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : offers.length > 0 ? (
+              offers.map((coupon, index) => (
+                <motion.div
+                  key={coupon.id}
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="min-w-[300px] bg-gradient-to-br from-primary/10 to-lavender/10 rounded-2xl p-6 border border-primary/20"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-3xl font-bold text-primary">
+                      {coupon.discount}
+                    </span>
+                    <span className="px-3 py-1 bg-primary/10 rounded-full text-primary text-sm font-mono">
+                      {coupon.code}
+                    </span>
+                  </div>
+                  <p className="text-foreground font-medium mb-2">
+                    {coupon.description}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Min. order: ₹{coupon.min_order} • Valid till {coupon.valid_till}
+                  </p>
+                </motion.div>
+              ))
+            ) : (
+              <div className="w-full text-center text-muted-foreground py-12">
+                No offers available at the moment.
+              </div>
+            )}
           </div>
         </div>
       </section>
