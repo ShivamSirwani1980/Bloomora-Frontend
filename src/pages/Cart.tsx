@@ -55,7 +55,7 @@ export default function Cart() {
                 Looks like you haven't added any flowers yet. Let's fix that!
               </p>
               <Link to="/shop">
-                <Button variant="hero" size="lg">
+                <Button variant="hero" size="xl">
                   Start Shopping
                   <ArrowRight className="w-5 h-5" />
                 </Button>
@@ -258,8 +258,8 @@ export default function Cart() {
                   </Button>
                 </Link>
 
-                <Link to="/shop" className="block mt-4">
-                  <Button variant="ghost" className="w-full">
+                <Link to="/shop" className="block mt-4" >
+                  <Button variant="ghost" className="w-full" size="xl">
                     Continue Shopping
                   </Button>
                 </Link>

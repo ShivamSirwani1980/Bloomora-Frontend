@@ -1,21 +1,86 @@
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Truck, Clock, Shield, Star, ChevronLeft, Minus, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/ProductCard';
 import { products } from '@/lib/data';
-import { useStore } from '@/lib/store';
+import { useStore, BestSellingResponse } from '@/lib/store';
+import useFetch from '@/hooks/useFetch';
 import { toast } from 'sonner';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useStore();
-  
-  const product = products.find((p) => p.id === id);
-  const relatedProducts = products.filter((p) => p.id !== id).slice(0, 4);
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}GetProductById/${id}/`);
+        const result = await res.json();
+        if (result.status === 200 && result.data) {
+          const data = result.data;
+          setProduct({
+            id: data.id || id,
+            name: data.name,
+            price: data.price,
+            originalPrice: data.original_price,
+            image: data.image_url,
+            category: data.category?.[0] || 'Bouquets',
+            tags: data.tags?.map((t: string) => t.toLowerCase()) || [],
+            description: data.description || 'A stunning arrangement, perfect for any occasion. Hand-tied with precision.',
+            inStock: true,
+            rating: data.rating || 0,
+            reviews: data.review_count || 0,
+          });
+        } else {
+          setProduct(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch product:", error);
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) {
+      fetchProduct();
+    }
+  }, [id]);
+
+  const { data: fetchedProducts, loading: bestSellingLoading, error: bestSellingError } =
+    useFetch<BestSellingResponse>(
+      `${import.meta.env.VITE_API_BASE_URL}Get/BestSelling/`
+    );
+
+  const bestSellingProducts =
+    fetchedProducts?.Data?.map((item: any) => ({
+      id: String(item.id),
+      name: item.name,
+      image: item.image_url,
+      price: item.price,
+      originalPrice: item.original_price,
+      rating: item.rating,
+      reviews: item.review_count,
+      tags: item.tags || [],
+    })) || [];
+
+  const relatedProducts = bestSellingProducts.filter((p) => p.id !== id).slice(0, 4);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="pt-24 section-padding text-center">
+          <h1 className="text-2xl font-bold mb-4">Loading product...</h1>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!product) {
     return (
@@ -198,12 +263,21 @@ export default function ProductDetail() {
           {/* Related Products */}
           <div className="mt-20">
             <h2 className="font-display text-2xl font-bold text-foreground mb-8">
-              You May Also Like
+              Best Selling Products
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((p, index) => (
-                <ProductCard key={p.id} product={p} index={index} />
-              ))}
+              {bestSellingLoading && (
+                <p className="col-span-4 text-center">Loading products...</p>
+              )}
+              {bestSellingError && (
+                <p className="col-span-4 text-center text-red-500">
+                  Failed to load products
+                </p>
+              )}
+              {!bestSellingLoading &&
+                relatedProducts.map((p, index) => (
+                  <ProductCard key={p.id} product={p} index={index} />
+                ))}
             </div>
           </div>
         </div>
