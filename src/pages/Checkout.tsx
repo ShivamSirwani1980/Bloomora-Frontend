@@ -214,7 +214,7 @@ export default function Checkout() {
         handler: async (response: RazorpayResponse) => {
           // 4️⃣ Verify payment on backend (with auth token)
           try {
-            const verifyRes = await fetch(`${API_BASE_URL}/payment/verify/`, {
+            const verifyRes = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/payment/verify/`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
