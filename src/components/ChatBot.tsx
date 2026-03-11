@@ -74,7 +74,7 @@ export function ChatBot() {
         }
 
         try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/main/Bloomora/'}ChatAI/`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/main/Bloomora/'}/api/v1/main/Bloomora/ChatAI/`, {
     method: 'POST',
     body: formData,
 });

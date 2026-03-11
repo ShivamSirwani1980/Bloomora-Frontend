@@ -48,7 +48,7 @@ export default function Login() {
         name: name || "User",
       });
 
-      localStorage.setItem("token", token);
+      localStorage.setItem("token", token); // ✅ Google login saves token
       toast.success("Login successful!");
       window.history.replaceState({}, document.title, "/login");
       navigate("/dashboard");
@@ -57,29 +57,24 @@ export default function Login() {
 
   // GOOGLE AUTH
   const handleGoogleAuth = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}Google/`;
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Google/`;
   };
 
-  // --- UPDATED VALIDATION LOGIC ---
   const validateForm = () => {
-    // 1. Email Check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       toast.error("Please enter a valid email address.");
       return false;
     }
 
-    // 2. Password Check (Min 8 chars)
     if (password.length < 8) {
       toast.error("Password must be at least 8 characters long.");
       return false;
     }
 
-    // 3. Signup Specific Checks
     if (!isLogin) {
-      // Name validation: Only letters, min 2 chars
       const nameRegex = /^[A-Za-z\s]{2,}$/;
-      
+
       if (!nameRegex.test(firstName.trim())) {
         toast.error("First name must be at least 2 letters (no numbers).");
         return false;
@@ -89,7 +84,6 @@ export default function Login() {
         return false;
       }
 
-      // DOB validation: Minimum 5 years old
       if (!dob) {
         toast.error("Please select your date of birth.");
         return false;
@@ -99,8 +93,7 @@ export default function Login() {
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const m = today.getMonth() - birthDate.getMonth();
-      
-      // Adjust if birthday hasn't happened yet this year
+
       if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
@@ -118,7 +111,6 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Trigger validation before proceeding
     if (!validateForm()) return;
 
     try {
@@ -152,8 +144,8 @@ export default function Login() {
       }
 
       const url = isLogin
-        ? `${import.meta.env.VITE_API_BASE_URL}Login/`
-        : `${import.meta.env.VITE_API_BASE_URL}Signup/`;
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Login/`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Signup/`;
 
       const res = await axios.post(url, payload);
 
@@ -171,12 +163,25 @@ export default function Login() {
 
         const decryptedData = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
 
+        // ✅ FIX: Save token to localStorage so Checkout can find it
+        if (decryptedData.token) {
+          localStorage.setItem("token", decryptedData.token);
+        } else if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+        }
+
         setUser({
           id: decryptedData.data.id,
           email: decryptedData.data.email,
           name: decryptedData.data.name,
         });
+
       } else {
+        // ✅ FIX: Save token for signup too
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+        }
+
         setUser({
           id: res.data.data.user_id,
           email: email.toLowerCase(),
@@ -186,6 +191,7 @@ export default function Login() {
 
       toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
       navigate("/dashboard");
+
     } catch (err: any) {
       console.error(err);
       toast.error(err.response?.data?.error || "Authentication failed");
@@ -201,7 +207,7 @@ export default function Login() {
           className="w-full max-w-md"
         >
           <div className="bg-card rounded-3xl p-8 shadow-elevated border border-border">
-            
+
             <div className="text-center mb-8">
               <Link to="/" className="inline-flex items-center gap-2 mb-4">
                 <Flower2 className="w-8 h-8 text-primary" />
@@ -257,7 +263,7 @@ export default function Login() {
                       <input
                         type="date"
                         value={dob}
-                        max={maxDate} // Visually prevents selecting dates < 5 years ago
+                        max={maxDate}
                         onChange={(e) => setDob(e.target.value)}
                         className="w-full input-premium pl-10"
                         required

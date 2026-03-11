@@ -19,7 +19,7 @@ const getIconForServiceType = (type: string) => {
 };
 
 export default function Decoration() {
-  const { data, loading, error } = useFetch<any>(`${import.meta.env.VITE_API_BASE_URL}getAllService/`);
+  const { data, loading, error } = useFetch<any>(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/getAllService/`);
   const servicesData = data?.data || [];
 
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export default function Decoration() {
         additional_requirements: formData.requirements,
       };
 
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}BookService/  `, payload);
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/BookService/  `, payload);
 
       toast.success('Thank you! Our team will contact you within 24 hours.');
       setFormData({

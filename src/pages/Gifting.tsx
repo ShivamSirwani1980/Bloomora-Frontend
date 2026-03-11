@@ -30,10 +30,10 @@ export interface GiftComboResponse {
 
 export default function Gifting() {
     const { addToCart } = useStore()
-    const { loading, error, data } = useFetch<GiftComboResponse>(`${import.meta.env.VITE_API_BASE_URL}GetAllGiftCombo/`)
+    const { loading, error, data } = useFetch<GiftComboResponse>(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/GetAllGiftCombo/`)
 const { loading: popularLoading, error: popularError, data: popularData } =
   useFetch<BestSellingResponse>(
-    `${import.meta.env.VITE_API_BASE_URL}Get/BestSelling/`
+    `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
   )
 
     const [selectedCategory, setSelectedCategory] = useState(null)

@@ -21,7 +21,7 @@ export default function ProductDetail() {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}GetProductById/${id}/`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/GetProductById/${id}/`);
         const result = await res.json();
         if (result.status === 200 && result.data) {
           const data = result.data;
@@ -55,7 +55,7 @@ export default function ProductDetail() {
 
   const { data: fetchedProducts, loading: bestSellingLoading, error: bestSellingError } =
     useFetch<BestSellingResponse>(
-      `${import.meta.env.VITE_API_BASE_URL}Get/BestSelling/`
+      `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
     );
 
   const bestSellingProducts =

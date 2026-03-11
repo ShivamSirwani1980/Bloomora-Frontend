@@ -48,7 +48,7 @@ export default function Shop() {
   // ✅ Refetch when category changes
   useEffect(() => {
     const url =
-      `${import.meta.env.VITE_API_BASE_URL}Get/Products/Category/?category=${selectedCategory}`;
+      `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/Products/Category/?category=${selectedCategory}`;
 
     setUrl(url);
   }, [selectedCategory]);

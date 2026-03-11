@@ -70,7 +70,7 @@ export default function Index() {
 
 const { data: fetchedProducts, loading, error } =
   useFetch<BestSellingResponse>(
-    `${import.meta.env.VITE_API_BASE_URL}Get/BestSelling/`
+    `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
   );
 
 const bestSellingProducts =
