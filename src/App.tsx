@@ -21,6 +21,8 @@ import Contact from "./pages/Contact";
 import About from "./pages/About";
 import FAQs from "./pages/FAQs";
 import NotFound from "./pages/NotFound";
+import LikedFlowers from "./pages/LikedFlowers";
+
 
 import '@fontsource/playfair-display/400.css';
 import '@fontsource/playfair-display/500.css';
@@ -49,6 +51,8 @@ function AppRoutes() {
       <Route path="/about" element={<About />} />
       <Route path="/faqs" element={<FAQs />} />
       <Route path="*" element={<NotFound />} />
+      <Route path="/liked-flowers" element={<LikedFlowers />} />
+      
     </Routes>
   );
 }

@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -18,7 +20,6 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // SIGNUP FIELDS
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState("");
@@ -28,13 +29,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { setUser } = useStore();
 
-  // Calculate the maximum date allowed (Today - 5 years)
-  const todayDate = new Date();
-  const maxDate = new Date(todayDate.getFullYear() - 5, todayDate.getMonth(), todayDate.getDate())
-    .toISOString()
-    .split("T")[0];
-
-  // GOOGLE LOGIN/SIGNUP SUCCESS HANDLER
+  // GOOGLE LOGIN
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
@@ -42,10 +37,12 @@ export default function Login() {
     const name = params.get("name");
 
     if (token && emailParam) {
+      const firstNameOnly = (name || "User").split(" ")[0];
+
       setUser({
         id: "google-user",
         email: emailParam,
-        name: name || "User",
+        name: firstNameOnly,
       });
 
       localStorage.setItem("token", token);
@@ -55,58 +52,32 @@ export default function Login() {
     }
   }, [navigate, setUser]);
 
-  // GOOGLE AUTH
   const handleGoogleAuth = () => {
     window.location.href = `${import.meta.env.VITE_API_BASE_URL}Google/`;
   };
 
-  // --- UPDATED VALIDATION LOGIC ---
   const validateForm = () => {
-    // 1. Email Check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      toast.error("Please enter a valid email address.");
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (!emailRegex.test(trimmedEmail)) {
+      toast.error("Invalid email format.");
       return false;
     }
 
-    // 2. Password Check (Min 8 chars)
     if (password.length < 8) {
       toast.error("Password must be at least 8 characters long.");
       return false;
     }
 
-    // 3. Signup Specific Checks
     if (!isLogin) {
-      // Name validation: Only letters, min 2 chars
-      const nameRegex = /^[A-Za-z\s]{2,}$/;
-      
-      if (!nameRegex.test(firstName.trim())) {
-        toast.error("First name must be at least 2 letters (no numbers).");
-        return false;
-      }
-      if (!nameRegex.test(lastName.trim())) {
-        toast.error("Last name must be at least 2 letters (no numbers).");
+      if (firstName.trim().length < 2) {
+        toast.error("First name must be at least 2 letters.");
         return false;
       }
 
-      // DOB validation: Minimum 5 years old
       if (!dob) {
         toast.error("Please select your date of birth.");
-        return false;
-      }
-
-      const birthDate = new Date(dob);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      
-      // Adjust if birthday hasn't happened yet this year
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-
-      if (age < 5) {
-        toast.error("Registration failed: You must be at least 5 years old.");
         return false;
       }
     }
@@ -114,11 +85,9 @@ export default function Login() {
     return true;
   };
 
-  // SUBMIT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Trigger validation before proceeding
     if (!validateForm()) return;
 
     try {
@@ -159,35 +128,43 @@ export default function Login() {
 
       if (isLogin) {
         const { encrypted_response, iv: respIv } = res.data;
-        const decryptedBytes = CryptoJS.AES.decrypt(
-          encrypted_response,
-          key,
-          {
-            iv: CryptoJS.enc.Base64.parse(respIv),
-            mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.Pkcs7,
-          }
+
+        const decryptedBytes = CryptoJS.AES.decrypt(encrypted_response, key, {
+          iv: CryptoJS.enc.Base64.parse(respIv),
+          mode: CryptoJS.mode.CBC,
+          padding: CryptoJS.pad.Pkcs7,
+        });
+
+        const decryptedData = JSON.parse(
+          decryptedBytes.toString(CryptoJS.enc.Utf8)
         );
 
-        const decryptedData = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
+        const data = decryptedData.data;
+
+        // SAFE NAME EXTRACTION
+        const firstNameOnly =
+          data.first_name ||
+          (data.name ? data.name.split(" ")[0] : null) ||
+          "User";
 
         setUser({
-          id: decryptedData.data.id,
-          email: decryptedData.data.email,
-          name: decryptedData.data.name,
+          id: data.id,
+          email: data.email,
+          name: firstNameOnly,
         });
+
+        localStorage.setItem("token", data.token || "");
       } else {
         setUser({
           id: res.data.data.user_id,
           email: email.toLowerCase(),
-          name: `${firstName} ${lastName}`,
+          name: firstName.trim(),
         });
       }
 
       toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
       navigate("/dashboard");
     } catch (err: any) {
-      console.error(err);
       toast.error(err.response?.data?.error || "Authentication failed");
     }
   };
@@ -201,7 +178,6 @@ export default function Login() {
           className="w-full max-w-md"
         >
           <div className="bg-card rounded-3xl p-8 shadow-elevated border border-border">
-            
             <div className="text-center mb-8">
               <Link to="/" className="inline-flex items-center gap-2 mb-4">
                 <Flower2 className="w-8 h-8 text-primary" />
@@ -209,25 +185,29 @@ export default function Login() {
                   Bloomora
                 </span>
               </Link>
+
               <h1 className="text-2xl font-bold text-foreground">
                 {isLogin ? "Welcome Back" : "Create Account"}
               </h1>
-              <p className="text-muted-foreground mt-2">
-                {isLogin ? "Sign in to your account" : "Join Bloomora today"}
-              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium mb-2">First Name</label>
+                    <label className="block text-sm font-medium mb-2">
+                      First Name
+                    </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <input
                         type="text"
                         value={firstName}
-                        onChange={(e) => setFirstName(e.target.value.replace(/[^A-Za-z\s]/g, ""))}
+                        onChange={(e) =>
+                          setFirstName(
+                            e.target.value.replace(/[^A-Za-z\s]/g, "")
+                          )
+                        }
                         className="w-full input-premium pl-10"
                         placeholder="First name"
                         required
@@ -236,13 +216,19 @@ export default function Login() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Last Name</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Last Name
+                    </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <input
                         type="text"
                         value={lastName}
-                        onChange={(e) => setLastName(e.target.value.replace(/[^A-Za-z\s]/g, ""))}
+                        onChange={(e) =>
+                          setLastName(
+                            e.target.value.replace(/[^A-Za-z\s]/g, "")
+                          )
+                        }
                         className="w-full input-premium pl-10"
                         placeholder="Last name"
                         required
@@ -251,13 +237,14 @@ export default function Login() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">DOB</label>
+                    <label className="block text-sm font-medium mb-2">
+                      DOB
+                    </label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <input
                         type="date"
                         value={dob}
-                        max={maxDate} // Visually prevents selecting dates < 5 years ago
                         onChange={(e) => setDob(e.target.value)}
                         className="w-full input-premium pl-10"
                         required
@@ -283,7 +270,9 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Password</label>
+                <label className="block text-sm font-medium mb-2">
+                  Password
+                </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <input
@@ -299,7 +288,11 @@ export default function Login() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -326,7 +319,10 @@ export default function Login() {
             </form>
 
             <p className="text-center mt-6 text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
+              {isLogin
+                ? "Don't have an account?"
+                : "Already have an account?"}
+
               <button
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-primary font-medium ml-1 hover:underline"
@@ -339,4 +335,4 @@ export default function Login() {
       </div>
     </Layout>
   );
-}
+} 
