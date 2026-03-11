@@ -291,6 +291,7 @@ export interface BestSellingResponse {
 
 
 export interface CartItem extends Product {
+  image: any;
   quantity: number;
   deliveryType?: 'express' | 'standard';
 }

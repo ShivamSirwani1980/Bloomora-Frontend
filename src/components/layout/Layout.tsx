@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { ChatBot } from '@/components/ChatBot';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ export function Layout({ children }: LayoutProps) {
         {children}
       </main>
       <Footer />
+      <ChatBot />
     </div>
   );
 }

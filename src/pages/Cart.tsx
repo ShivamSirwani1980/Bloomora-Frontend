@@ -340,7 +340,7 @@ export default function Cart() {
               </p>
 
               <Link to="/shop">
-                <Button variant="hero" size="lg">
+                <Button variant="hero" size="xl">
                   Start Shopping
                   <ArrowRight className="w-5 h-5" />
                 </Button>
@@ -586,14 +586,14 @@ export default function Cart() {
                 </div>
 
                 <Link to="/checkout">
-                  <Button variant="hero" size="lg" className="w-full">
+                  <Button variant="hero" size="xl" className="w-full">
                     Proceed to Checkout
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
 
-                <Link to="/shop" className="block mt-4">
-                  <Button variant="ghost" className="w-full">
+                <Link to="/shop" className="block mt-4" >
+                  <Button variant="ghost" className="w-full" size="xl">
                     Continue Shopping
                   </Button>
                 </Link>

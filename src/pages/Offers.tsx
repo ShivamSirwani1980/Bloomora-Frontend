@@ -90,11 +90,16 @@ export default function Offers() {
                 <div className="relative">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <p className="text-5xl font-bold text-gradient">{coupon.discount}%</p>
+                      <p className="text-5xl font-bold text-gradient">
+                        {coupon.discount}
+                      </p>
                       <p className="text-sm text-muted-foreground">OFF</p>
                     </div>
+
                     <div className="px-4 py-2 bg-background/80 backdrop-blur rounded-xl">
-                      <p className="font-mono font-bold text-primary text-lg">{coupon.code}</p>
+                      <p className="font-mono font-bold text-primary text-lg">
+                        {coupon.code}
+                      </p>
                     </div>
                   </div>
 
@@ -110,7 +115,7 @@ export default function Offers() {
                   </div>
 
                   <Button
-                    variant={copiedCode === coupon.code ? 'soft' : 'hero'}
+                    variant={copiedCode === coupon.code ? "soft" : "hero"}
                     className="w-full"
                     onClick={() => copyCode(coupon.code)}
                   >

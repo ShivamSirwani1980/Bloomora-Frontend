@@ -45,7 +45,7 @@ export default function Login() {
         name: firstNameOnly,
       });
 
-      localStorage.setItem("token", token);
+      localStorage.setItem("token", token); // ✅ Google login saves token
       toast.success("Login successful!");
       window.history.replaceState({}, document.title, "/login");
       navigate("/dashboard");
@@ -53,15 +53,14 @@ export default function Login() {
   }, [navigate, setUser]);
 
   const handleGoogleAuth = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}Google/`;
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Google/`;
   };
 
   const validateForm = () => {
-    const trimmedEmail = email.trim().toLowerCase();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-    if (!emailRegex.test(trimmedEmail)) {
-      toast.error("Invalid email format.");
+    // 1. Email Check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error("Please enter a valid email address.");
       return false;
     }
 
@@ -71,13 +70,35 @@ export default function Login() {
     }
 
     if (!isLogin) {
-      if (firstName.trim().length < 2) {
-        toast.error("First name must be at least 2 letters.");
+      // Name validation: Only letters, min 2 chars
+      const nameRegex = /^[A-Za-z\s]{2,}$/;
+      
+      if (!nameRegex.test(firstName.trim())) {
+        toast.error("First name must be at least 2 letters (no numbers).");
+        return false;
+      }
+      if (!nameRegex.test(lastName.trim())) {
+        toast.error("Last name must be at least 2 letters (no numbers).");
         return false;
       }
 
       if (!dob) {
         toast.error("Please select your date of birth.");
+        return false;
+      }
+
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      
+      // Adjust if birthday hasn't happened yet this year
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age < 5) {
+        toast.error("Registration failed: You must be at least 5 years old.");
         return false;
       }
     }
@@ -121,8 +142,8 @@ export default function Login() {
       }
 
       const url = isLogin
-        ? `${import.meta.env.VITE_API_BASE_URL}Login/`
-        : `${import.meta.env.VITE_API_BASE_URL}Signup/`;
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Login/`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Signup/`;
 
       const res = await axios.post(url, payload);
 
@@ -135,26 +156,19 @@ export default function Login() {
           padding: CryptoJS.pad.Pkcs7,
         });
 
-        const decryptedData = JSON.parse(
-          decryptedBytes.toString(CryptoJS.enc.Utf8)
-        );
-
-        const data = decryptedData.data;
-
-        // SAFE NAME EXTRACTION
-        const firstNameOnly =
-          data.first_name ||
-          (data.name ? data.name.split(" ")[0] : null) ||
-          "User";
+        const decryptedData = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
 
         setUser({
           id: data.id,
           email: data.email,
           name: firstNameOnly,
         });
-
-        localStorage.setItem("token", data.token || "");
       } else {
+        // ✅ FIX: Save token for signup too
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+        }
+
         setUser({
           id: res.data.data.user_id,
           email: email.toLowerCase(),
@@ -164,6 +178,7 @@ export default function Login() {
 
       toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
       navigate("/dashboard");
+
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Authentication failed");
     }
@@ -178,6 +193,7 @@ export default function Login() {
           className="w-full max-w-md"
         >
           <div className="bg-card rounded-3xl p-8 shadow-elevated border border-border">
+            
             <div className="text-center mb-8">
               <Link to="/" className="inline-flex items-center gap-2 mb-4">
                 <Flower2 className="w-8 h-8 text-primary" />
@@ -245,6 +261,7 @@ export default function Login() {
                       <input
                         type="date"
                         value={dob}
+                        max={maxDate} // Visually prevents selecting dates < 5 years ago
                         onChange={(e) => setDob(e.target.value)}
                         className="w-full input-premium pl-10"
                         required
