@@ -68,7 +68,7 @@ function loadRazorpayScript(): Promise<boolean> {
 // ─────────────────────────────────────────────────────────────
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cart, getCartTotal, clearCart, deliveryType } = useStore();
+  const { cart, getCartTotal, clearCart, deliveryType, isAuthenticated } = useStore();
 
   const [address, setAddress] = useState({
     street: '', city: '', state: '', pincode: '',
@@ -76,19 +76,22 @@ export default function Checkout() {
   const [isPaying, setIsPaying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<RazorpayResponse | null>(null);
 
-  // ── 🔐 Auth Guard — redirect to login if not authenticated ──
   useEffect(() => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (!token) {
+    if (!isAuthenticated) {
       toast.error('Please login to continue with checkout');
       navigate('/login', { state: { from: '/checkout' } });
     }
-  }, [navigate]);
+  }, [isAuthenticated, navigate]);
 
   // Pre-load Razorpay script on mount
   useEffect(() => {
     loadRazorpayScript();
   }, []);
+
+  // ── Auth protection rendering ──
+  if (!isAuthenticated) {
+    return null; // Don't render anything while redirecting
+  }
 
   // ── Empty cart guard ──
   if (cart.length === 0 && !paymentSuccess) {
