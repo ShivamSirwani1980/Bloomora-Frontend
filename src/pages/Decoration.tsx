@@ -50,7 +50,7 @@ export default function Decoration() {
         additional_requirements: formData.requirements,
       };
 
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/BookService/  `, payload);
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/BookService/`, payload);
 
       toast.success('Thank you! Our team will contact you within 24 hours.');
       setFormData({
