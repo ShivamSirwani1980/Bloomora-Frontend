@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useScrollToTop } from "@/hooks/use-scroll-to-top";
+import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
@@ -22,7 +23,18 @@ import About from "./pages/About";
 import FAQs from "./pages/FAQs";
 import NotFound from "./pages/NotFound";
 import LikedFlowers from "./pages/LikedFlowers";
-
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminOffers from "./pages/admin/AdminOffers";
+import AdminBouquets from "./pages/admin/AdminBouquets";
+import AdminDecorations from "./pages/admin/AdminDecorations";
+import AdminInventory from "./pages/admin/AdminInventory";
+import AdminReports from "./pages/admin/AdminReports";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminNotifications from "./pages/admin/AdminNotifications";
 
 import '@fontsource/playfair-display/400.css';
 import '@fontsource/playfair-display/500.css';
@@ -52,7 +64,20 @@ function AppRoutes() {
       <Route path="/faqs" element={<FAQs />} />
       <Route path="*" element={<NotFound />} />
       <Route path="/liked-flowers" element={<LikedFlowers />} />
-      
+
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/products" element={<AdminProducts />} />
+      <Route path="/admin/orders" element={<AdminOrders />} />
+      <Route path="/admin/users" element={<AdminUsers />} />
+      <Route path="/admin/bouquets" element={<AdminBouquets />} />
+      <Route path="/admin/offers" element={<AdminOffers />} />
+      <Route path="/admin/decorations" element={<AdminDecorations />} />
+      <Route path="/admin/inventory" element={<AdminInventory />} />
+      <Route path="/admin/reports" element={<AdminReports />} />
+      <Route path="/admin/settings" element={<AdminSettings />} />
+      <Route path="/admin/notifications" element={<AdminNotifications />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
     </Routes>
   );
 }

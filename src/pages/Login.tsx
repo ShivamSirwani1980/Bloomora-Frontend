@@ -115,7 +115,7 @@ export default function Login() {
 
     try {
       const key = CryptoJS.enc.Base64.parse(ENCRYPTION_KEY_BASE64);
-      let payload: any;
+      let payload: Record<string, string>;
 
       if (isLogin) {
         const ivWordArray = CryptoJS.lib.WordArray.random(16);
@@ -194,9 +194,10 @@ export default function Login() {
       toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
       navigate("/dashboard");
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.response?.data?.error || "Authentication failed");
+      const error = err as import('axios').AxiosError<{error: string}>;
+      toast.error(error.response?.data?.error || "Authentication failed");
     }
   };
 

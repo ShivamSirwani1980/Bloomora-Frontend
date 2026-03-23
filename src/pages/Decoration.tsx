@@ -18,8 +18,10 @@ const getIconForServiceType = (type: string) => {
   }
 };
 
+export interface Service { id: string; title: string; description: string; starting_price: string; image_url: string; service_type: string; }
+
 export default function Decoration() {
-  const { data, loading, error } = useFetch<any>(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/getAllService/`);
+  const { data, loading, error } = useFetch<{ data: Service[] }>(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/getAllService/`);
   const servicesData = data?.data || [];
 
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -126,7 +128,7 @@ export default function Decoration() {
 
           {!loading && !error && (
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {servicesData.map((service: any, index: number) => (
+              {servicesData.map((service: Service, index: number) => (
                 <motion.div
                   key={service.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -249,7 +251,7 @@ export default function Decoration() {
                   className="w-full input-premium"
                 >
                   <option value="">Select event type</option>
-                  {servicesData.map((service: any) => (
+                  {servicesData.map((service: Service) => (
                     <option key={service.id} value={service.id}>
                       {service.title}
                     </option>
