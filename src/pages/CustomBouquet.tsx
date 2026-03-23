@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ShoppingCart, Save, X, Eye } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 import Bouquet3D from "@/components/Bouquet3D";
 import { cn } from "@/lib/utils";
-
+import { useSearchParams } from "react-router-dom";
 interface SelectedFlower {
   type: string;
   color: string;
@@ -32,7 +32,29 @@ export default function CustomBouquet() {
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
-  const { isAuthenticated, saveBouquet, addToCart } = useStore();
+  const [searchParams] = useSearchParams();
+  const { isAuthenticated, saveBouquet, addToCart, user, savedBouquets } = useStore();
+
+  useEffect(() => {
+    const editId = searchParams.get("id");
+    if (editId && savedBouquets) {
+      const saved = savedBouquets.find((b) => b.id === editId);
+      if (saved) {
+        setSelectedFlowers(
+          saved.flowers.map((f) => ({
+            type: f.type,
+            color: f.color,
+            quantity: f.quantity,
+            price: flowerTypes.find((ft) => ft.name === f.type)?.price || 0,
+          }))
+        );
+        const wrap = wrapStyles.find((w) => w.name === saved.wrapStyle);
+        if (wrap) setSelectedWrap(wrap);
+        setSelectedAddOns(saved.addOns || []);
+        if (saved.message) setMessage(saved.message);
+      }
+    }
+  }, [searchParams]);
 
   const totalPrice = useMemo(() => {
     const flowersTotal = selectedFlowers.reduce(
@@ -99,8 +121,8 @@ export default function CustomBouquet() {
     );
   };
 
-  const handleSaveBouquet = () => {
-    if (!isAuthenticated) {
+  const handleSaveBouquet = async () => {
+    if (!isAuthenticated || !user) {
       toast.error("Please login to save your bouquet");
       return;
     }
@@ -108,43 +130,119 @@ export default function CustomBouquet() {
       toast.error("Please select at least one flower");
       return;
     }
-    saveBouquet({
-      id: Date.now().toString(),
-      name: `Custom Bouquet ${Date.now()}`,
-      flowers: selectedFlowers.map((f) => ({
-        type: f.type,
-        color: f.color,
-        quantity: f.quantity,
-      })),
-      wrapStyle: selectedWrap.name,
-      addOns: selectedAddOns,
-      message,
-      createdAt: new Date(),
-      totalPrice,
-    });
-    toast.success("Bouquet saved to your account!");
+
+    try {
+      const payload = {
+        email: user.email,
+        bouquet_details: {
+          flowers: selectedFlowers.map((f) => ({
+            category: f.type,
+            color: f.color,
+            qty: f.quantity,
+            price_per_stem: f.price,
+          })),
+          special_touches: selectedAddOns,
+          message: message,
+        },
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/CustomBouquet/Save/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to save bouquet on server");
+      }
+
+      saveBouquet({
+        id: Date.now().toString(),
+        name: `Custom Bouquet ${Date.now()}`,
+        flowers: selectedFlowers.map((f) => ({
+          type: f.type,
+          color: f.color,
+          quantity: f.quantity,
+        })),
+        wrapStyle: selectedWrap.name,
+        addOns: selectedAddOns,
+        message,
+        createdAt: new Date(),
+        totalPrice,
+      });
+      toast.success("Bouquet saved to your account!");
+    } catch (error) {
+      console.error("Error saving bouquet:", error);
+      toast.error("Failed to save bouquet. Please try again.");
+    }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (selectedFlowers.length === 0) {
       toast.error("Please select at least one flower");
       return;
     }
-    addToCart({
-      id: `custom-${Date.now()}`,
-      name: "Custom Bouquet",
-      price: totalPrice,
-      image: "",
-      category: "Custom",
-      tags: ["custom"],
-      description: `Custom bouquet with ${selectedFlowers
-        .map((f) => `${f.quantity} ${f.color} ${f.type}`)
-        .join(", ")}`,
-      inStock: true,
-      rating: 5,
-      reviews: 0,
-    });
-    toast.success("Custom bouquet added to cart!");
+    
+    // We require user to be logged in to sync the custom bouquet to the backend
+    if (!isAuthenticated || !user) {
+      toast.error("Please login to add a custom bouquet to your cart");
+      return;
+    }
+
+    try {
+      const payload = {
+        email: user.email,
+        bouquet_details: {
+          flowers: selectedFlowers.map((f) => ({
+            category: f.type,
+            color: f.color,
+            qty: f.quantity,
+            price_per_stem: f.price,
+          })),
+          special_touches: selectedAddOns,
+          message: message,
+        },
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/CreateCustom/Bouquet/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to process custom bouquet API request");
+      }
+
+      addToCart({
+        id: `custom-${Date.now()}`,
+        name: "Custom Bouquet",
+        price: totalPrice,
+        image: "",
+        category: "Custom",
+        tags: ["custom"],
+        description: `Custom bouquet with ${selectedFlowers
+          .map((f) => `${f.quantity} ${f.color} ${f.type}`)
+          .join(", ")}`,
+        inStock: true,
+        rating: 5,
+        reviews: 0,
+      });
+      toast.success("Custom bouquet added to cart!");
+    } catch (error) {
+      console.error("Error creating custom bouquet:", error);
+      toast.error("Failed to add custom bouquet. Please try again.");
+    }
   };
 
   return (
@@ -236,61 +334,6 @@ export default function CustomBouquet() {
                 </div>
               </motion.div>
 
-              {/* Step 2: Wrap Style */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-card rounded-2xl p-6 border border-border"
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                    2
-                  </div>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Select Wrap Style
-                  </h2>
-                </div>
-
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {wrapStyles.map((wrap) => {
-                    const swatch = WRAP_SWATCHES[wrap.name];
-                    const isSelected = selectedWrap.name === wrap.name;
-                    return (
-                      <button
-                        key={wrap.name}
-                        onClick={() => setSelectedWrap(wrap)}
-                        className={cn(
-                          "p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3",
-                          isSelected
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/50"
-                        )}
-                      >
-                        {/* Color swatch */}
-                        <div
-                          className="w-8 h-8 rounded-lg flex-shrink-0 border border-border/50 shadow-sm"
-                          style={{ backgroundColor: swatch ?? "#ccc" }}
-                        />
-                        <div>
-                          <p className="font-medium text-foreground text-sm">
-                            {wrap.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {wrap.price === 0 ? "Free" : `+₹${wrap.price}`}
-                          </p>
-                        </div>
-                        {isSelected && (
-                          <div className="ml-auto w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-white" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-
               {/* Step 3: Add-ons */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -300,7 +343,7 @@ export default function CustomBouquet() {
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                    3
+                    2
                   </div>
                   <h2 className="text-xl font-semibold text-foreground">
                     Add Special Touches
@@ -337,7 +380,7 @@ export default function CustomBouquet() {
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                    4
+                    3
                   </div>
                   <h2 className="text-xl font-semibold text-foreground">
                     Add a Message{" "}

@@ -25,6 +25,7 @@ export default function ProductDetail() {
         const result = await res.json();
         if (result.status === 200 && result.data) {
           const data = result.data;
+
           setProduct({
             id: data.id || id,
             name: data.name,
@@ -38,6 +39,8 @@ export default function ProductDetail() {
             rating: data.rating || 0,
             reviews: data.review_count || 0,
           });
+
+      
         } else {
           setProduct(null);
         }
@@ -52,6 +55,8 @@ export default function ProductDetail() {
       fetchProduct();
     }
   }, [id]);
+
+  console.log(product);
 
   const { data: fetchedProducts, loading: bestSellingLoading, error: bestSellingError } =
     useFetch<BestSellingResponse>(
