@@ -81,7 +81,7 @@ function normalizeGLB(scene: THREE.Object3D, color: string): THREE.Group {
     geo.applyMatrix4(mesh.matrixWorld);
     const rawMat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     const mat = (rawMat as THREE.MeshStandardMaterial).clone();
-    try { mat.color.set(color); } catch (_) {}
+    try { mat.color.set(color); } catch (_) { /* ignore */ }
     mat.roughness = 0.45;
     mat.metalness = 0.0;
     flat.add(new THREE.Mesh(geo, mat));

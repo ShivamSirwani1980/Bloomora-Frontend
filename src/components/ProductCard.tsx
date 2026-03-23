@@ -143,6 +143,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   product: any; // allow API structure
   index?: number;
 }

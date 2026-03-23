@@ -14,7 +14,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useStore();
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function ProductDetail() {
     );
 
   const bestSellingProducts =
-    fetchedProducts?.Data?.map((item: any) => ({
+    fetchedProducts?.Data?.map((item: Product) => ({
       id: String(item.id),
       name: item.name,
       image: item.image_url,
