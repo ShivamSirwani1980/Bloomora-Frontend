@@ -240,19 +240,7 @@ export function Navbar() {
 
           {/* Right Section */}
           <div className="flex items-center gap-2 md:gap-4">
-            {/* Search - Desktop */}
-            <Link
-              to="/shop"
-              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
-            >
-              <Search className="w-4 h-4" />
-              <span className="text-sm">Search flowers...</span>
-            </Link>
 
-            {/* Search - Mobile */}
-            <Link to="/shop" className="md:hidden p-2 hover:bg-muted rounded-lg transition-colors">
-              <Search className="w-5 h-5 text-muted-foreground" />
-            </Link>
 
             {/* Wishlist */}
             <Link to="/liked-flowers" className="hidden md:flex relative p-2 hover:bg-muted rounded-lg transition-colors">
