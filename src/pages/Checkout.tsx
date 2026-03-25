@@ -68,7 +68,7 @@ function loadRazorpayScript(): Promise<boolean> {
 // ─────────────────────────────────────────────────────────────
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cart, getCartTotal, clearCart, deliveryType, isAuthenticated, user } = useStore();
+  const { cart, getCartTotal, clearCart, deliveryType, isAuthenticated, user, appliedCoupon } = useStore();
 
   const paymentMethod = 'RAZORPAY'; // Default payment method for this component
   const [address, setAddress] = useState({
@@ -76,6 +76,8 @@ export default function Checkout() {
   });
   const [isPaying, setIsPaying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<RazorpayResponse | null>(null);
+
+     console.log(cart);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -252,6 +254,39 @@ export default function Checkout() {
               clearCart();
               setPaymentSuccess(response);
               toast.success('Payment successful! Order confirmed 🌸');
+              // 5️⃣ Send order details to Integrated Checkout API
+              try {
+                const checkoutPayload = {
+                  email: user?.email || "",
+                  delivery_type: deliveryType,
+                  coupon_code: appliedCoupon || "BLOOM10",
+                  payment_method: "UPI",
+                  cart_items: cart.map(item => ({
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    category: item.category || "Pre-made",
+                    details: item.description || "Premium Arrangement"
+                  })),
+                  address: {
+                    street_address: address.street,
+                    city: address.city,
+                    state: address.state,
+                    pincode: address.pincode
+                  }
+                };
+
+                await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/IntegratedCheckout/`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(checkoutPayload),
+                });
+              } catch (error) {
+                console.error('Failed to send integrated checkout data:', error);
+              }
             } else {
               toast.error(finalizeData.message || 'Payment verification failed. Contact support.');
             }

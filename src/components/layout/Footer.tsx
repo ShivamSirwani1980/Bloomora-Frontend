@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Flower2, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Shield } from 'lucide-react';
+import { Flower2, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Shield, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const footerLinks = {
@@ -43,25 +43,7 @@ const socialLinks = [
 export function Footer() {
   return (
     <footer className="bg-gradient-to-b from-background to-rose-light/30 border-t border-border">
-      {/* Newsletter Section */}
       <div className="container-custom mx-auto px-4 md:px-8 py-12 md:py-16">
-        <div className="bg-gradient-to-r from-primary/10 to-lavender/10 rounded-3xl p-8 md:p-12 text-center mb-16">
-          <h3 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-3">
-            Bloom with Us
-          </h3>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            Subscribe to get exclusive offers, new arrivals, and floral inspiration delivered to your inbox.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 input-premium text-center sm:text-left"
-            />
-            <Button variant="hero">Subscribe</Button>
-          </div>
-        </div>
-
         {/* Main Footer */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-12">
           {/* Brand Section */}
@@ -164,7 +146,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-muted-foreground text-sm">
-            © 2024 Bloomora. All rights reserved. Made with 💐 in India.
+            © 2026 Bloomora. All rights reserved. Made with <Heart className="w-4 h-4 inline text-rose-500 fill-current mx-1" /> in India.
           </p>
           <div className="flex items-center gap-4">
             {socialLinks.map((social) => (

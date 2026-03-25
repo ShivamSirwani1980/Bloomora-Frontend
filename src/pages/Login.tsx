@@ -189,7 +189,9 @@ export default function Login() {
         setUser({
           id: decryptedData.data.id,
           email: decryptedData.data.email,
-          name: decryptedData.data.name,
+          name: decryptedData.data.first_name 
+                 ? `${decryptedData.data.first_name} ${decryptedData.data.last_name || ''}`.trim() 
+                 : decryptedData.data.name || "User",
         });
 
         await syncUserStateFromDB(decryptedData.data.email);
