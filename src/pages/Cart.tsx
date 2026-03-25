@@ -304,6 +304,8 @@ export default function Cart() {
 
   const [couponInput, setCouponInput] = useState('');
 
+  console.log(cart);
+
   const handleApplyCoupon = () => {
     if (applyCoupon(couponInput)) {
       toast.success('Coupon applied successfully!');

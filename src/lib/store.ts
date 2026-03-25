@@ -53,8 +53,9 @@ export interface SavedBouquet extends BouquetCustomization {
 export interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   addresses?: Address[];
 }
@@ -106,11 +107,13 @@ interface StoreState {
 
   // Saved Bouquets
   savedBouquets: SavedBouquet[];
+  setSavedBouquets: (bouquets: SavedBouquet[]) => void;
   saveBouquet: (bouquet: SavedBouquet) => void;
   removeBouquet: (id: string) => void;
 
   // Orders
   orders: Order[];
+  setOrders: (orders: Order[]) => void;
   addOrder: (order: Order) => void;
 
   // Reminders
@@ -227,6 +230,7 @@ export const useStore = create<StoreState>()(
 
       // Saved Bouquets
       savedBouquets: [],
+      setSavedBouquets: (bouquets) => set({ savedBouquets: bouquets }),
       saveBouquet: (bouquet) =>
         set((state) => ({
           savedBouquets: [...state.savedBouquets, bouquet],
@@ -238,6 +242,7 @@ export const useStore = create<StoreState>()(
 
       // Orders
       orders: [],
+      setOrders: (fetchedOrders) => set({ orders: fetchedOrders }),
       addOrder: (order) =>
         set((state) => ({
           orders: [order, ...state.orders],
