@@ -6,7 +6,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/ProductCard';
 import { products } from '@/lib/data';
-import { useStore, BestSellingResponse } from '@/lib/store';
+import { useStore, BestSellingResponse, Product } from '@/lib/store';
 import useFetch from '@/hooks/useFetch';
 import { toast } from 'sonner';
 
