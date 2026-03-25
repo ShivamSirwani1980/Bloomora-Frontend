@@ -68,8 +68,9 @@ function loadRazorpayScript(): Promise<boolean> {
 // ─────────────────────────────────────────────────────────────
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cart, getCartTotal, clearCart, deliveryType, isAuthenticated } = useStore();
+  const { cart, getCartTotal, clearCart, deliveryType, isAuthenticated, user } = useStore();
 
+  const paymentMethod = 'RAZORPAY'; // Default payment method for this component
   const [address, setAddress] = useState({
     street: '', city: '', state: '', pincode: '',
   });
@@ -171,75 +172,90 @@ export default function Checkout() {
     setIsPaying(true);
 
     try {
-      // 1️⃣ Load Razorpay script
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded || !window.Razorpay) {
-        toast.error('Could not load payment gateway. Check your internet connection.');
-        setIsPaying(false);
-        return;
-      }
-
-      // 2️⃣ Create Razorpay order on backend (with auth token)
-      const orderRes = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/payment/create-order/`, {
+      // 🚀 Step 1: Call Integrated Checkout (Handles Cart + Auth + Init)
+      const checkoutRes = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/IntegratedCheckout/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,   // 🔐 Send token to backend
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          amount: getCartTotal(),   // in rupees, backend converts to paise
-          currency: 'INR',
+          email: user?.email,
+          cart_items: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            selections: item.selections // Preserve the recipe!
+          })),
+          delivery_type: deliveryType,
+          coupon_code: useStore.getState().appliedCoupon,
+          address: {
+            street_address: address.street,
+            city: address.city,
+            state: address.state,
+            pincode: address.pincode
+          },
+          payment_method: paymentMethod.toUpperCase()
         }),
       });
 
-      if (orderRes.status === 401) {
-        toast.error('Session expired. Please login again.');
-        navigate('/login', { state: { from: '/checkout' } });
+      const checkoutData = await checkoutRes.json();
+
+      if (!checkoutRes.ok) {
+        throw new Error(checkoutData.message || 'Checkout failed');
+      }
+
+      // 💳 Step 2: Handle COD (Immediate Success)
+      if (paymentMethod.toUpperCase() === 'COD') {
+        clearCart();
+        navigate('/orders');
+        toast.success('Order placed successfully! 🌸');
         return;
       }
 
-      if (!orderRes.ok) {
-        const err = await orderRes.json();
-        throw new Error(err.error || 'Failed to create order');
-      }
-
-      const orderData = await orderRes.json();
-
-      // 3️⃣ Open Razorpay Checkout
-      const options: RazorpayOptions = {
-        key: orderData.key_id,
-        amount: orderData.amount,          // in paise
-        currency: orderData.currency,
-        name: 'Bloomora 🌸',
-        description: 'Fresh Flowers Delivery',
-        order_id: orderData.order_id,
-
-        handler: async (response: RazorpayResponse) => {
-          // 4️⃣ Verify payment on backend (with auth token)
+      // 💳 Step 3: Handle RAZORPAY (Open Modal)
+      const options: RazorpayOptions = { // Explicitly type options
+        key: checkoutData.key_id,
+        amount: checkoutData.amount,
+        currency: 'INR',
+        name: 'Bloomora',
+        description: 'Thank you for your purchase',
+        order_id: checkoutData.razorpay_order_id,
+        handler: async function (response: RazorpayResponse) { // Explicitly type response
           try {
-            const verifyRes = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/payment/verify/`, {
+            // After successful payment, finalize/verify the order using the SAME endpoint
+            const finalizeRes = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/IntegratedCheckout/`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,   // 🔐 Send token to backend
+                'Authorization': `Bearer ${token}`,
               },
               body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
+                email: user?.email,
+                address: {
+                  street_address: address.street,
+                  city: address.city,
+                  state: address.state,
+                  pincode: address.pincode
+                },
+                payment_method: 'RAZORPAY',
                 razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
               }),
             });
 
-            const verifyData = await verifyRes.json();
+            const finalizeData = await finalizeRes.json();
 
-            if (verifyData.success) {
+            if (finalizeRes.ok || finalizeData.status === 200) {
               clearCart();
               setPaymentSuccess(response);
-              toast.success('Payment verified! Order confirmed 🌸');
+              toast.success('Payment successful! Order confirmed 🌸');
             } else {
-              toast.error('Payment verification failed. Contact support.');
+              toast.error(finalizeData.message || 'Payment verification failed. Contact support.');
             }
-          } catch {
+          } catch (err) {
             toast.error('Could not verify payment. Contact support.');
           }
         },

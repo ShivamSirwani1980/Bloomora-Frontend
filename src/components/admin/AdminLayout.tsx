@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,7 +32,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
-    const { setAdminAuthenticated } = useStore();
+    const { setAdminAuthenticated, isAdminAuthenticated } = useStore();
+
+    useEffect(() => {
+        if (!isAdminAuthenticated) {
+            navigate('/admin/login');
+        }
+    }, [isAdminAuthenticated, navigate]);
 
     const isActive = (path: string) => {
         if (path === '/admin') return location.pathname === '/admin';

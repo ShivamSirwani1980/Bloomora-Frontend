@@ -1,39 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Ban, Trash2, ShoppingCart } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import axios from 'axios';
 
-const mockUsers = Array.from({ length: 15 }, (_, i) => ({
-  id: `USR-${1000 + i}`,
-  name: ['Priya Sharma', 'Rahul Verma', 'Ananya Patel', 'Vikram Singh', 'Meera Joshi', 'Arjun Nair', 'Sneha Gupta'][i % 7],
-  email: `user${i + 1}@bloomora.com`,
-  orders: Math.floor(Math.random() * 20) + 1,
-  totalSpent: Math.floor(Math.random() * 30000) + 2000,
-  joined: new Date(2025, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toLocaleDateString(),
-  blocked: false,
-  bouquets: Math.floor(Math.random() * 5),
-  reminders: Math.floor(Math.random() * 3),
-}));
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  orders: number;
+  totalSpent: number;
+  joined: string;
+  status: string;
+  bouquets: number;
+}
 
 export default function AdminUsers() {
   const [search, setSearch] = useState('');
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}api/v1/main/Bloomora/Admin/Users/All/`);
+      if (res.data.status === 200) {
+        setUsers(res.data.users);
+      } else {
+        toast.error('Failed to fetch users');
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('API Error fetching users');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filtered = users.filter(
     (u) => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleBlock = (id: string) => {
-    setUsers((prev) => prev.map((u) => u.id === id ? { ...u, blocked: !u.blocked } : u));
-    toast.success('User status updated');
+  const toggleBlock = async (id: string) => {
+    try {
+      const res = await axios.patch(`${API_BASE_URL}api/v1/main/Bloomora/Admin/Users/ToggleBlock/${id}/`);
+      if (res.data.status === 200) {
+        setUsers((prev) => prev.map((u) => u.id === id ? { ...u, status: res.data.data.status } : u));
+        toast.success(res.data.message);
+      } else {
+        toast.error('Failed to update user status');
+      }
+    } catch (error) {
+      toast.error('API Error updating user status');
+    }
   };
 
-  const deleteUser = (id: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
-    toast.success('User deleted');
+  const deleteUser = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    
+    try {
+      const res = await axios.delete(`${API_BASE_URL}api/v1/main/Bloomora/Admin/Users/Delete/${id}/`);
+      if (res.data.status === 200) {
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+        toast.success('User deleted successfully');
+      } else {
+        toast.error('Failed to delete user');
+      }
+    } catch (error) {
+      toast.error('API Error deleting user');
+    }
   };
 
   return (
@@ -88,9 +132,9 @@ export default function AdminUsers() {
                     <td className="py-3 px-4 text-muted-foreground">{user.joined}</td>
                     <td className="py-3 px-4">
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        user.blocked ? 'bg-destructive/10 text-destructive' : 'bg-green-100 text-green-800'
+                        user.status === 'Blocked' ? 'bg-destructive/10 text-destructive' : 'bg-green-100 text-green-800'
                       }`}>
-                        {user.blocked ? 'Blocked' : 'Active'}
+                        {user.status}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -98,7 +142,7 @@ export default function AdminUsers() {
                         <button
                           onClick={() => toggleBlock(user.id)}
                           className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          title={user.blocked ? 'Unblock' : 'Block'}
+                          title={user.status === 'Blocked' ? 'Unblock' : 'Block'}
                         >
                           <Ban className="w-4 h-4" />
                         </button>

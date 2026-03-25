@@ -1,13 +1,30 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingCart, Save, X, Eye } from "lucide-react";
+import { Sparkles, ShoppingCart, Save, X } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { flowerTypes, wrapStyles, addOns } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 import Bouquet3D from "@/components/Bouquet3D";
 import { cn } from "@/lib/utils";
+
+interface FlowerType {
+  name: string;
+  price: number;
+  colors: string[];
+}
+
+interface WrapStyle {
+  name: string;
+  price: number;
+}
+
+interface AddOn {
+  name: string;
+  price: number;
+  status: string;
+}
 
 interface SelectedFlower {
   type: string;
@@ -16,23 +33,52 @@ interface SelectedFlower {
   price: number;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/';
+
 // Wrap style color swatches for the UI
 const WRAP_SWATCHES: Record<string, string> = {
-  "Classic White": "#f0ece8",
-  "Kraft Paper": "#c8a46e",
-  "Blush Pink": "#f0c8d4",
-  "Sage Green": "#b8d4b0",
-  "Midnight Black": "#2c2c2c",
-  Lavender: "#d4c0f0",
+  "Classic Kraft Paper": "#c8a46e",
+  "Premium Satin Wrap": "#f0c8d4",
+  "Elegant Box": "#f0ece8",
+  "Luxury Hat Box": "#2c2c2c",
+  "Glass Vase": "#d4c0f0",
 };
 
 export default function CustomBouquet() {
+  const [flowerTypes, setFlowerTypes] = useState<FlowerType[]>([]);
+  const [wrapStyles, setWrapStyles] = useState<WrapStyle[]>([]);
+  const [addOns, setAddOns] = useState<AddOn[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [selectedFlowers, setSelectedFlowers] = useState<SelectedFlower[]>([]);
-  const [selectedWrap, setSelectedWrap] = useState(wrapStyles[0]);
+  const [selectedWrap, setSelectedWrap] = useState<WrapStyle | null>(null);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [message, setMessage] = useState("");
-  const [previewOpen, setPreviewOpen] = useState(false);
   const { isAuthenticated, saveBouquet, addToCart } = useStore();
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}api/v1/main/Bloomora/Admin/Bouquets/Config/`);
+        if (res.data.status === 200) {
+          setFlowerTypes(res.data.flowerTypes);
+          setWrapStyles(res.data.wrapStyles);
+          
+          // Only show active add-ons
+          setAddOns(res.data.addOns.filter((a: any) => a.status === 'Active'));
+          
+          if (res.data.wrapStyles.length > 0) {
+            setSelectedWrap(res.data.wrapStyles[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch bouquet config:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchConfig();
+  }, []);
 
   const totalPrice = useMemo(() => {
     const flowersTotal = selectedFlowers.reduce(
@@ -42,12 +88,12 @@ export default function CustomBouquet() {
     const addOnsTotal = addOns
       .filter((a) => selectedAddOns.includes(a.name))
       .reduce((sum, a) => sum + a.price, 0);
-    return flowersTotal + selectedWrap.price + addOnsTotal;
-  }, [selectedFlowers, selectedWrap, selectedAddOns]);
+    return flowersTotal + (selectedWrap?.price || 0) + addOnsTotal;
+  }, [selectedFlowers, selectedWrap, selectedAddOns, addOns]);
 
   const totalStems = selectedFlowers.reduce((sum, f) => sum + f.quantity, 0);
 
-  const addFlower = (flowerType: (typeof flowerTypes)[0], color: string) => {
+  const addFlower = (flowerType: FlowerType, color: string) => {
     const existing = selectedFlowers.find(
       (f) => f.type === flowerType.name && f.color === color
     );
@@ -116,7 +162,7 @@ export default function CustomBouquet() {
         color: f.color,
         quantity: f.quantity,
       })),
-      wrapStyle: selectedWrap.name,
+      wrapStyle: selectedWrap?.name || "Classic Kraft Paper",
       addOns: selectedAddOns,
       message,
       createdAt: new Date(),
@@ -130,11 +176,26 @@ export default function CustomBouquet() {
       toast.error("Please select at least one flower");
       return;
     }
+    
+    // Preparation for Backend analytics
+    const selections = {
+      flowers: selectedFlowers.map(f => ({
+        type: f.type,
+        color: f.color,
+        quantity: f.quantity,
+        price: f.price
+      })),
+      wrapStyle: selectedWrap?.name || "Classic Kraft Paper",
+      addOns: selectedAddOns,
+      message: message
+    };
+
     addToCart({
       id: `custom-${Date.now()}`,
       name: "Custom Bouquet",
       price: totalPrice,
-      image: "",
+      image_url: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?q=80&w=400&auto=format&fit=crop", 
+      image: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?q=80&w=400&auto=format&fit=crop", 
       category: "Custom",
       tags: ["custom"],
       description: `Custom bouquet with ${selectedFlowers
@@ -143,9 +204,20 @@ export default function CustomBouquet() {
       inStock: true,
       rating: 5,
       reviews: 0,
-    });
+      selections: selections as any // Pass details to store
+    } as any);
     toast.success("Custom bouquet added to cart!");
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

@@ -26,7 +26,21 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
-  const { setUser } = useStore();
+  const { setUser, setCart, setLikedProducts } = useStore();
+
+  const syncUserStateFromDB = async (emailToSync: string) => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/User/State/`, {
+        params: { email: emailToSync }
+      });
+      if (res.data && res.data.data) {
+        setCart(res.data.data.cart || []);
+        setLikedProducts(res.data.data.liked_products || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch user state", e);
+    }
+  };
 
   // Calculate the maximum date allowed (Today - 5 years)
   const todayDate = new Date();
@@ -49,9 +63,11 @@ export default function Login() {
       });
 
       localStorage.setItem("token", token); // ✅ Google login saves token
-      toast.success("Login successful!");
-      window.history.replaceState({}, document.title, "/login");
-      navigate("/dashboard");
+      syncUserStateFromDB(emailParam).then(() => {
+        toast.success("Login successful!");
+        window.history.replaceState({}, document.title, "/login");
+        navigate("/dashboard");
+      });
     }
   }, [navigate, setUser]);
 
@@ -176,6 +192,8 @@ export default function Login() {
           name: decryptedData.data.name,
         });
 
+        await syncUserStateFromDB(decryptedData.data.email);
+
       } else {
         // ✅ FIX: Save token for signup too
         if (res.data.token) {
@@ -187,6 +205,8 @@ export default function Login() {
           email: email.toLowerCase(),
           name: `${firstName} ${lastName}`,
         });
+
+        await syncUserStateFromDB(email.toLowerCase());
       }
 
       toast.success(isLogin ? "Welcome back!" : "Account created successfully!");

@@ -164,7 +164,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, User, Menu, X, Search, Heart, Flower2 } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, Heart, Flower2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -182,7 +182,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { getCartCount, isAuthenticated, getLikedCount } = useStore();
+  const { getCartCount, isAuthenticated, getLikedCount, isAdminAuthenticated } = useStore();
   const cartCount = getCartCount();
   const likedCount = getLikedCount();
 
@@ -282,10 +282,20 @@ export function Navbar() {
               )}
             </Link>
 
+            {/* Admin Panel Link */}
+            {isAdminAuthenticated && (
+              <Link to="/admin">
+                <Button variant="outline" size="sm" className="hidden md:flex border-primary text-primary hover:bg-primary/10">
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin
+                </Button>
+              </Link>
+            )}
+
             {/* User/Login */}
             <Link to={isAuthenticated ? '/dashboard' : '/login'}>
               <Button variant="soft" size="sm" className="hidden md:flex">
-                <User className="w-4 h-4" />
+                <User className="w-4 h-4 mr-2" />
                 {isAuthenticated ? 'Account' : 'Login'}
               </Button>
             </Link>
@@ -329,10 +339,18 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-border">
+              <div className="pt-4 border-t border-border space-y-2">
+                {isAdminAuthenticated && (
+                  <Link to="/admin">
+                    <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Panel
+                    </Button>
+                  </Link>
+                )}
                 <Link to={isAuthenticated ? '/dashboard' : '/login'}>
                   <Button variant="hero" className="w-full">
-                    <User className="w-4 h-4" />
+                    <User className="w-4 h-4 mr-2" />
                     {isAuthenticated ? 'My Account' : 'Login / Sign Up'}
                   </Button>
                 </Link>

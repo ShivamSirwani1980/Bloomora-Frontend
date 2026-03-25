@@ -52,7 +52,7 @@ export default function Decoration() {
         additional_requirements: formData.requirements,
       };
 
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/BookService/`, payload);
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/BookService/`, payload);
 
       toast.success('Thank you! Our team will contact you within 24 hours.');
       setFormData({
@@ -137,11 +137,11 @@ export default function Decoration() {
                   transition={{ delay: index * 0.1 }}
                   className={cn(
                     'relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300',
-                    selectedService === service.id
+                    selectedService === service.title
                       ? 'ring-2 ring-primary shadow-elevated'
                       : 'hover:shadow-card'
                   )}
-                  onClick={() => setSelectedService(service.id)}
+                  onClick={() => setSelectedService(service.title)}
                 >
                   <div className="aspect-[4/3] relative">
                     <img
@@ -161,7 +161,7 @@ export default function Decoration() {
                       </p>
                     </div>
                   </div>
-                  {selectedService === service.id && (
+                  {selectedService === service.title && (
                     <div className="absolute top-3 right-3 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                       <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
                     </div>
@@ -252,7 +252,7 @@ export default function Decoration() {
                 >
                   <option value="">Select event type</option>
                   {servicesData.map((service: Service) => (
-                    <option key={service.id} value={service.id}>
+                    <option key={service.id} value={service.title}>
                       {service.title}
                     </option>
                   ))}

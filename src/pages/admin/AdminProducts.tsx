@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { products as defaultProducts } from '@/lib/data';
 import { useStore, Product } from '@/lib/store';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 const categories = ['All', 'Exotic', 'Bouquets', 'Premium', 'Roses', 'Seasonal'];
 
@@ -23,11 +24,13 @@ const emptyForm = {
   name: '',
   price: '',
   originalPrice: '',
-  category: 'Bouquets',
+  categories: ['Bouquets'] as string[],
   description: '',
   rating: '4.5',
+  reviews: '0',
   stock: '20',
   image: '',
+  isBestselling: false,
 };
 
 export default function AdminProducts() {
@@ -40,6 +43,8 @@ export default function AdminProducts() {
   const [deleteTarget, setDeleteTarget] = useState<AdminProduct | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Seed admin products from static data on first load
   useEffect(() => {
@@ -56,23 +61,45 @@ export default function AdminProducts() {
 
   const productList = adminProducts as unknown as AdminProduct[];
 
+  const matchCat = (cat: string | string[], selected: string) => {
+    if (selected === 'All') return true;
+    if (Array.isArray(cat)) return cat.includes(selected);
+    return cat === selected;
+  };
+
   const filtered = productList.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
+    const matchesCat = matchCat(p.category, selectedCategory);
     return matchesSearch && matchesCat;
   });
 
-  const toggleVisibility = (id: string) => {
+  const toggleVisibility = async (id: string) => {
     const product = productList.find((p) => p.id === id);
     if (product) {
-      updateAdminProduct(id, { ...product, visible: !product.visible } as unknown as Product);
-      toast.success('Product visibility updated');
+      if (id.length < 24) {
+        updateAdminProduct(id, { ...product, visible: !product.visible } as unknown as Product);
+        toast.success('Product visibility updated (local sample data)');
+        return;
+      }
+
+      try {
+        const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/ToggleProductVisibility/${id}/`);
+        if (res.status === 200) {
+          updateAdminProduct(id, { ...product, visible: res.data.data.visible } as unknown as Product);
+          toast.success('Product visibility updated');
+        } else {
+          toast.error('Failed to change visibility');
+        }
+      } catch (e: any) {
+        toast.error('API Error toggling visibility');
+      }
     }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const url = URL.createObjectURL(file);
       setImagePreview(url);
       setForm((f) => ({ ...f, image: url }));
@@ -82,6 +109,7 @@ export default function AdminProducts() {
   const openAddDialog = () => {
     setForm(emptyForm);
     setImagePreview(null);
+    setImageFile(null);
     setShowAddDialog(true);
   };
 
@@ -91,63 +119,178 @@ export default function AdminProducts() {
       name: product.name,
       price: String(product.price),
       originalPrice: String(product.originalPrice || ''),
-      category: product.category,
+      categories: Array.isArray(product.category) ? product.category : [product.category],
       description: product.description || '',
       rating: String(product.rating),
+      reviews: String(product.review_count || product.reviews || '0'),
       stock: String(product.stock),
       image: product.image || product.image_url || '',
+      isBestselling: product.isBestselling || false,
     });
     setImagePreview(product.image || product.image_url || null);
   };
 
-  const handleAdd = () => {
-    if (!form.name || !form.price) {
-      toast.error('Name and price are required');
+  const handleAdd = async () => {
+    if (!form.name || !form.price || !imageFile) {
+      toast.error('Name, price, and a product image are required');
       return;
     }
-    const newProduct: AdminProduct = {
-      id: crypto.randomUUID(),
-      name: form.name,
-      price: Number(form.price),
-      originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
-      category: form.category,
-      description: form.description,
-      rating: Number(form.rating) || 4.5,
-      reviews: 0,
-      image: form.image || '/placeholder.svg',
-      inStock: true,
-      visible: true,
-      stock: Number(form.stock) || 20,
-    };
-    addAdminProduct(newProduct as unknown as Product);
-    setShowAddDialog(false);
-    toast.success('Product added successfully');
+
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('price', String(form.price));
+      if (form.originalPrice) {
+        formData.append('original_price', String(form.originalPrice));
+      }
+      form.categories.forEach((cat) => {
+        formData.append('category', cat);
+      });
+      // Backend does not natively track description and stock in CreateProduct currently, but we provide it:
+      formData.append('description', form.description || '');
+      formData.append('rating', String(form.rating || 4.5));
+      formData.append('review_count', String(form.reviews || 0));
+      formData.append('stock', String(form.stock || 20));
+      formData.append('isBestselling', String(form.isBestselling));
+      formData.append('image', imageFile);
+
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/CreateProduct/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+        if (res.status === 200 || res.status === 201) {
+          const newProduct: AdminProduct = {
+            id: res.data.data?.id || res.data.data || res.data._id || crypto.randomUUID(),
+            name: form.name,
+            price: Number(form.price),
+            originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
+            category: form.categories,
+            description: form.description,
+            rating: Number(form.rating) || 4.5,
+            reviews: Number(form.reviews) || 0,
+            review_count: Number(form.reviews) || 0,
+            image: res.data.data?.image_url || form.image || '/placeholder.svg',
+            inStock: true,
+            visible: true,
+            stock: Number(form.stock) || 20,
+            isBestselling: form.isBestselling,
+          };
+        addAdminProduct(newProduct as unknown as Product);
+        setShowAddDialog(false);
+        toast.success('Product created securely in the database');
+      } else {
+        toast.error(res.data.error || 'Failed to create product via API');
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.response?.data?.error || e.message || 'Error occurred while saving product');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editProduct || !form.name || !form.price) {
       toast.error('Name and price are required');
       return;
     }
-    updateAdminProduct(editProduct.id, {
-      name: form.name,
-      price: Number(form.price),
-      originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
-      category: form.category,
-      description: form.description,
-      rating: Number(form.rating) || 4.5,
-      image: form.image || editProduct.image,
-      stock: Number(form.stock),
-    } as unknown as Product);
-    setEditProduct(null);
-    toast.success('Product updated successfully');
+    
+    if (editProduct.id.length < 24) {
+      updateAdminProduct(editProduct.id, {
+        name: form.name,
+        price: Number(form.price),
+        originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
+        category: form.categories,
+        description: form.description,
+        rating: Number(form.rating) || 4.5,
+        review_count: Number(form.reviews) || 0,
+        reviews: Number(form.reviews) || 0,
+        image: form.image || editProduct.image,
+        stock: Number(form.stock),
+        isBestselling: form.isBestselling,
+      } as unknown as Product);
+      setEditProduct(null);
+      toast.success('Product updated (local sample data)');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('price', String(form.price));
+      if (form.originalPrice) {
+        formData.append('original_price', String(form.originalPrice));
+      }
+      form.categories.forEach((cat) => {
+        formData.append('category', cat);
+      });
+      formData.append('description', form.description || '');
+      formData.append('rating', String(form.rating || 4.5));
+      formData.append('review_count', String(form.reviews || 0));
+      formData.append('stock', String(form.stock || 20));
+      formData.append('isBestselling', String(form.isBestselling));
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+      
+      const res = await axios.put(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/UpdateProduct/${editProduct.id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (res.status === 200) {
+        updateAdminProduct(editProduct.id, {
+          name: form.name,
+          price: Number(form.price),
+          originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
+          category: form.categories,
+          description: form.description,
+          rating: Number(form.rating) || 4.5,
+          review_count: Number(form.reviews) || 0,
+          reviews: Number(form.reviews) || 0,
+          image: res.data.data?.image_url || res.data.image_url || form.image || editProduct.image,
+          stock: Number(form.stock),
+          isBestselling: form.isBestselling,
+        } as unknown as Product);
+        setEditProduct(null);
+        toast.success('Product updated fully in database');
+      } else {
+        toast.error('Failed to update product via API');
+      }
+    } catch(e) {
+       toast.error('Error updating product in API');
+    } finally {
+       setIsSubmitting(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteTarget) {
-      deleteAdminProduct(deleteTarget.id);
-      setDeleteTarget(null);
-      toast.success('Product deleted successfully');
+      const id = deleteTarget.id;
+      setDeleteTarget(null); // optimistic UX
+
+      if (id.length < 24) {
+        deleteAdminProduct(id);
+        toast.success('Product permanently deleted (local sample data)');
+        return;
+      }
+
+      try {
+        const res = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/DeleteProduct/${id}/`);
+        if (res.status === 200) {
+           deleteAdminProduct(id);
+           toast.success('Product permanently deleted');
+        } else {
+           toast.error('Failed to delete product from database');
+        }
+      } catch(e) {
+         toast.error('API Error deleting product');
+      }
     }
   };
 
@@ -169,15 +312,33 @@ export default function AdminProducts() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="category">Category</Label>
-          <Select value={form.category} onValueChange={(val) => setForm((f) => ({ ...f, category: val }))}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {categories.filter((c) => c !== 'All').map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Categories</Label>
+          <div className="flex flex-wrap gap-2">
+            {categories.filter((c) => c !== 'All').map((c) => {
+              const isSelected = form.categories.includes(c);
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      categories: isSelected
+                        ? f.categories.filter((cat) => cat !== c)
+                        : [...f.categories, c],
+                    }))
+                  }
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    isSelected
+                      ? 'bg-primary border-primary text-primary-foreground'
+                      : 'bg-transparent border-input text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="stock">Stock</Label>
@@ -185,8 +346,35 @@ export default function AdminProducts() {
         </div>
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="rating">Rating</Label>
-        <Input id="rating" type="number" step="0.1" min="0" max="5" value={form.rating} onChange={(e) => setForm((f) => ({ ...f, rating: e.target.value }))} />
+        <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-xl border border-border">
+          <button
+            type="button"
+            onClick={() => setForm((f) => ({ ...f, isBestselling: !f.isBestselling }))}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+              form.isBestselling ? 'bg-primary' : 'bg-input'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out ${
+                form.isBestselling ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          <div className="space-y-0.5">
+            <Label className="text-sm font-medium">Bestselling Product</Label>
+            <p className="text-xs text-muted-foreground">Show this product in the Bestselling section</p>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-2">
+          <Label htmlFor="rating">Rating</Label>
+          <Input id="rating" type="number" step="0.1" min="0" max="5" value={form.rating} onChange={(e) => setForm((f) => ({ ...f, rating: e.target.value }))} />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="reviews">Review Count</Label>
+          <Input id="reviews" type="number" min="0" value={form.reviews} onChange={(e) => setForm((f) => ({ ...f, reviews: e.target.value }))} />
+        </div>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="description">Description</Label>
@@ -281,7 +469,13 @@ export default function AdminProducts() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-1 rounded-full bg-muted text-xs font-medium text-muted-foreground">{product.category}</span>
+                        <div className="flex gap-1 flex-wrap max-w-[150px]">
+                          {(Array.isArray(product.category) ? product.category : [product.category]).map((c) => (
+                            <span key={c} className="px-2 py-1 rounded-full bg-muted text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                              {c}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="py-3 px-4 font-semibold text-foreground">₹{product.price}</td>
                       <td className="py-3 px-4">
@@ -329,8 +523,17 @@ export default function AdminProducts() {
           </DialogHeader>
           <ProductFormContent />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-            <Button onClick={handleAdd}>Add Product</Button>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleAdd} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                'Add Product'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -282,7 +282,7 @@ import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 
 export default function Dashboard() {
-  const { user, isAuthenticated, setUser, orders, savedBouquets, reminders } = useStore();
+  const { user, isAuthenticated, setUser, clearUserSession, orders, savedBouquets, reminders } = useStore();
   const navigate = useNavigate();
 
   if (!isAuthenticated) {
@@ -300,6 +300,7 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     setUser(null);
+    clearUserSession();
     localStorage.removeItem("token");
     navigate("/");
   };

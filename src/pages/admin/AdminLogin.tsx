@@ -6,14 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useStore } from '@/lib/store';
+import axios from "axios";
+import CryptoJS from "crypto-js";
 
-// Hardcoded dummy credentials for testing — replace with real backend auth later
-const DUMMY_EMAIL = 'admin@bloomora.com';
-const DUMMY_PASSWORD = 'admin123';
+const ENCRYPTION_KEY_BASE64 = import.meta.env.VITE_ENCRYPTION_KEY;
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { setAdminAuthenticated } = useStore();
@@ -22,18 +24,96 @@ export default function AdminLogin() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const key = CryptoJS.enc.Base64.parse(ENCRYPTION_KEY_BASE64);
+      const ivWordArray = CryptoJS.lib.WordArray.random(16);
+      const ivBase64 = CryptoJS.enc.Base64.stringify(ivWordArray);
 
-    if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-      setAdminAuthenticated(true);
-      toast.success('Welcome back, Admin!');
-      navigate('/admin');
-    } else {
-      toast.error('Invalid credentials. Try admin@bloomora.com / admin123');
+      const encryptField = (value: string) =>
+        CryptoJS.AES.encrypt(value, key, {
+          iv: ivWordArray,
+          mode: CryptoJS.mode.CBC,
+          padding: CryptoJS.pad.Pkcs7,
+        }).toString();
+
+      if (step === 1) {
+        const payload = {
+          email: encryptField(email.trim().toLowerCase()),
+          password: encryptField(password),
+          iv: ivBase64,
+        };
+
+        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/AdminLogin/`, payload);
+
+        const { encrypted_response, iv: respIv } = res.data;
+        const decryptedBytes = CryptoJS.AES.decrypt(
+          encrypted_response,
+          key,
+          {
+            iv: CryptoJS.enc.Base64.parse(respIv),
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7,
+          }
+        );
+
+        const decryptedData = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
+
+        if (decryptedData.require_otp) {
+          toast.success(decryptedData.message || 'Verification code sent to your email.');
+          setStep(2);
+        } else {
+          // Save token to localStorage 
+          if (decryptedData.token) {
+            localStorage.setItem("token", decryptedData.token);
+          } else if (res.data.token) {
+            localStorage.setItem("token", res.data.token);
+          }
+
+          setAdminAuthenticated(true);
+          toast.success('Welcome back, Admin!');
+          navigate('/admin');
+        }
+      } else if (step === 2) {
+        const payload = {
+          email: encryptField(email.trim().toLowerCase()),
+          otp: encryptField(otp.trim()),
+          iv: ivBase64,
+        };
+
+        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/VerifyAdminOTP/`, payload);
+
+        const { encrypted_response, iv: respIv } = res.data;
+        const decryptedBytes = CryptoJS.AES.decrypt(
+          encrypted_response,
+          key,
+          {
+            iv: CryptoJS.enc.Base64.parse(respIv),
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7,
+          }
+        );
+
+        const decryptedData = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
+
+        // Save token to localStorage 
+        if (decryptedData.token) {
+          localStorage.setItem("token", decryptedData.token);
+        } else if (res.data.token) {
+          localStorage.setItem("token", res.data.token); // fallback
+        }
+
+        setAdminAuthenticated(true);
+        toast.success('Welcome back, Admin!');
+        navigate('/admin');
+      }
+
+    } catch (err: unknown) {
+      console.error(err);
+      const error = err as import('axios').AxiosError<{error: string}>;
+      toast.error(error.response?.data?.error || "Authentication failed. Invalid credentials.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -54,41 +134,60 @@ export default function AdminLogin() {
               <Flower2 className="w-6 h-6 text-primary" />
               <span className="font-display text-2xl font-bold text-gradient">Bloomora</span>
             </div>
-            <h1 className="text-xl font-display font-bold text-foreground mt-2">Admin Panel</h1>
             <p className="text-muted-foreground text-sm mt-1">Sign in to manage your store</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@bloomora.com"
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
+            {step === 1 ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@bloomora.com"
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="pl-10"
-                  required
-                />
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Verification Code</label>
+                <div className="relative">
+                  <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="Enter 6-digit code"
+                    className="pl-10"
+                    maxLength={6}
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
@@ -97,7 +196,7 @@ export default function AdminLogin() {
                   Signing in...
                 </span>
               ) : (
-                'Sign In'
+                step === 1 ? 'Sign In' : 'Verify & Sign In'
               )}
             </Button>
           </form>
@@ -105,15 +204,31 @@ export default function AdminLogin() {
           {/* Hint */}
           <div className="mt-6 p-3 rounded-xl bg-muted/50 border border-border/50">
             <p className="text-xs text-muted-foreground text-center">
-              <span className="font-semibold">Demo credentials:</span> admin@bloomora.com / admin123
+              {step === 1 
+                ? "Please use your secure administrator credentials."
+                : "A verification code has been sent to your registered email address."}
             </p>
           </div>
 
           {/* Back link */}
           <p className="text-center mt-4">
-            <button onClick={() => navigate('/')} className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              ← Back to store
-            </button>
+            {step === 1 ? (
+              <button 
+                type="button"
+                onClick={() => navigate('/')} 
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                ← Back to store
+              </button>
+            ) : (
+              <button 
+                type="button"
+                onClick={() => setStep(1)} 
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                ← Back to login
+              </button>
+            )}
           </p>
         </div>
       </motion.div>

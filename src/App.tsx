@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useScrollToTop } from "@/hooks/use-scroll-to-top";
-import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
@@ -40,11 +39,30 @@ import '@fontsource/playfair-display/400.css';
 import '@fontsource/playfair-display/500.css';
 import '@fontsource/playfair-display/600.css';
 import '@fontsource/playfair-display/700.css';
+import { useStore } from '@/lib/store';
+import { useEffect } from 'react';
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
   useScrollToTop();
+
+  const { cart, likedProducts, isAuthenticated, user } = useStore();
+
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      // Sync user state with backend seamlessly
+      fetch('http://127.0.0.1:8000/api/v1/main/Bloomora/User/State/Sync/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          cart: cart,
+          liked_products: likedProducts
+        })
+      }).catch(err => console.error("Error syncing state", err));
+    }
+  }, [cart, likedProducts, isAuthenticated, user]);
 
   return (
     <Routes>

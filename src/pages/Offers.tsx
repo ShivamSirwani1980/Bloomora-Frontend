@@ -36,7 +36,9 @@ export default function Offers() {
       )
       .then((res) => {
         console.log('API DATA:', res.data);
-        setCoupons(res.data.data); // ⭐ FIXED
+        // ⭐ Filter only active coupons for the public page
+        const activeCoupons = res.data.data.filter((c: any) => c.active !== false);
+        setCoupons(activeCoupons);
       })
       .catch((err) => console.log('API ERROR:', err));
   }, []);

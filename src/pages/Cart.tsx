@@ -287,7 +287,26 @@ import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import { toast } from 'sonner';
+function CartImage({ item }: { item: any }) {
+  const [error, setError] = useState(false);
+  const src = item.image_url || item.image;
+
+  if (error || !src) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-2xl bg-muted">
+        💐
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      className="w-full h-full object-cover"
+      onError={() => setError(true)}
+    />
+  );
+}
 
 export default function Cart() {
   const {
@@ -382,19 +401,7 @@ export default function Cart() {
 
                   {/* PRODUCT IMAGE */}
                   <div className="w-24 h-24 rounded-xl overflow-hidden bg-muted shrink-0">
-
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-2xl">
-                        💐
-                      </div>
-                    )}
-
+                    <CartImage item={item} />
                   </div>
 
                   {/* PRODUCT DETAILS */}

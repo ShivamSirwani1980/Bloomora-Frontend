@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Flower2, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube } from 'lucide-react';
+import { Flower2, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const footerLinks = {
@@ -151,6 +151,12 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link to="/admin/login" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 mt-4 pt-4 border-t border-border/50">
+                  <Shield className="w-3 h-3" />
+                  Admin Portal
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

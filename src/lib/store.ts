@@ -7,7 +7,7 @@ export interface Product {
   name: string;
   image?: string;
   image_url?: string;
-  category: string;
+  category: string | string[];
   isBestselling?: boolean;
   rating: number;
   reviews?: number;
@@ -33,6 +33,7 @@ export interface CartItem extends Product {
   image?: string;
   quantity: number;
   deliveryType?: 'express' | 'standard';
+  selections?: BouquetCustomization;
 }
 
 export interface BouquetCustomization {
@@ -142,6 +143,11 @@ interface StoreState {
   addAdminProduct: (product: Product) => void;
   updateAdminProduct: (id: string, updates: Partial<Product>) => void;
   deleteAdminProduct: (id: string) => void;
+
+  // Sync
+  setCart: (cartItems: CartItem[]) => void;
+  setLikedProducts: (products: Product[]) => void;
+  clearUserSession: () => void;
 }
 
 // Available Coupons
@@ -177,9 +183,14 @@ export const useStore = create<StoreState>()(
       },
 
       removeFromCart: (productId) => {
-        set((state) => ({
-          cart: state.cart.filter((item) => item.id !== productId),
-        }));
+        set((state) => {
+          const newCart = state.cart.filter((item) => item.id !== productId);
+          return {
+            cart: newCart,
+            appliedCoupon: newCart.length === 0 ? null : state.appliedCoupon,
+            deliveryType: newCart.length === 0 ? 'standard' : state.deliveryType,
+          };
+        });
       },
 
       updateQuantity: (productId, quantity) => {
@@ -194,7 +205,11 @@ export const useStore = create<StoreState>()(
         }));
       },
 
-      clearCart: () => set({ cart: [] }),
+      clearCart: () => set({ 
+        cart: [], 
+        appliedCoupon: null, 
+        deliveryType: 'standard' 
+      }),
 
       getCartTotal: () => {
         const state = get();
@@ -257,9 +272,11 @@ export const useStore = create<StoreState>()(
       // Coupon
       appliedCoupon: null,
       applyCoupon: (code) => {
-        const upperCode = code.toUpperCase();
-        if (validCoupons[upperCode]) {
+        const upperCode = code.toUpperCase().trim();
+        if (upperCode) {
           set({ appliedCoupon: upperCode });
+          // Note: We'll let the backend determine the actual discount value
+          // during the checkout/cart update process.
           return true;
         }
         return false;
@@ -303,6 +320,21 @@ export const useStore = create<StoreState>()(
       deleteAdminProduct: (id) => set((state) => ({
         adminProducts: state.adminProducts.filter((p) => p.id !== id)
       })),
+
+      // Sync specific methods
+      setCart: (cartItems) => set({ cart: cartItems }),
+      setLikedProducts: (products) => set({ likedProducts: products }),
+      clearUserSession: () => set({
+        cart: [],
+        likedProducts: [],
+        savedBouquets: [],
+        orders: [],
+        reminders: [],
+        user: null,
+        isAuthenticated: false,
+        appliedCoupon: null,
+        deliveryType: 'standard',
+      }),
     }),
     {
       name: 'bloomora-store',
