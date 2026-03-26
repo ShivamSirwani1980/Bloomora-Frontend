@@ -9,6 +9,7 @@ import { products } from '@/lib/data';
 import { useStore, BestSellingResponse, Product } from '@/lib/store';
 import useFetch from '@/hooks/useFetch';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -21,7 +22,7 @@ export default function ProductDetail() {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/GetProductById/${id}/`);
+        const res = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/GetProductById/${id}/`);
         const result = await res.json();
         if (result.status === 200 && result.data) {
           const data = result.data;
@@ -56,11 +57,10 @@ export default function ProductDetail() {
     }
   }, [id]);
 
-  console.log(product);
 
   const { data: fetchedProducts, loading: bestSellingLoading, error: bestSellingError } =
     useFetch<BestSellingResponse>(
-      `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
+      `${API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
     );
 
   const bestSellingProducts =

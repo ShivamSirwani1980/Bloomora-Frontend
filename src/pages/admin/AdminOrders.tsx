@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 import { MapPin, Phone, Mail, Calendar, Package, CreditCard, X, ExternalLink } from 'lucide-react';
 
@@ -56,7 +57,7 @@ export default function AdminOrders() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/Admin/Orders/All/`);
+      const res = await axios.get(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Orders/All/`);
       if (res.status === 200) {
         const formattedOrders = res.data.orders.map((o: any) => ({
           id: o.id,
@@ -100,7 +101,7 @@ export default function AdminOrders() {
 
     try {
       const res = await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/Admin/Orders/UpdateStatus/${id}/`,
+        `${API_BASE_URL}/api/v1/main/Bloomora/Admin/Orders/UpdateStatus/${id}/`,
         { status: nextStatus }
       );
 

@@ -9,6 +9,7 @@ import { ProductCard } from '@/components/ProductCard'
 import useFetch from '@/hooks/useFetch'
 import { BestSellingResponse, useStore } from '@/lib/store'
 import { toast } from 'sonner'
+import { API_BASE_URL } from '@/lib/api'
 
 export interface GiftCombo {
     id: string
@@ -30,10 +31,10 @@ export interface GiftComboResponse {
 
 export default function Gifting() {
     const { addToCart } = useStore()
-    const { loading, error, data } = useFetch<GiftComboResponse>(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/GetAllGiftCombo/`)
+    const { loading, error, data } = useFetch<GiftComboResponse>(`${API_BASE_URL}/api/v1/main/Bloomora/GetAllGiftCombo/`)
 const { loading: popularLoading, error: popularError, data: popularData } =
   useFetch<BestSellingResponse>(
-    `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
+    `${API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
   )
 
     const [selectedCategory, setSelectedCategory] = useState(null)

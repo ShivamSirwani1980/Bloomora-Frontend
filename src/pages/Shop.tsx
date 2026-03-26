@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { categories } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import useFetch from '@/hooks/useFetch';
+import { API_BASE_URL } from '@/lib/api';
 
 const priceRanges = [
   { label: 'Under ₹1000', min: 0, max: 1000 },
@@ -46,10 +47,9 @@ export default function Shop() {
   const { data, loading, error, setUrl } =
     useFetch<ProductsResponse>('');
 
-  // ✅ Refetch when category changes
   useEffect(() => {
     const url =
-      `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/Products/Category/?category=${selectedCategory}`;
+      `${API_BASE_URL}/api/v1/main/Bloomora/Get/Products/Category/?category=${selectedCategory}`;
 
     setUrl(url);
   }, [selectedCategory]);

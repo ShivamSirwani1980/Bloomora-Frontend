@@ -45,7 +45,7 @@ export const DobModal: React.FC<DobModalProps> = ({ isOpen, email, onSuccess }) 
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/main/bloomora/user/update-dob/`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/user/update-dob/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, dob }),

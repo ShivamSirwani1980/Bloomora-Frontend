@@ -12,6 +12,7 @@ import { products as defaultProducts } from '@/lib/data';
 import { useStore, Product } from '@/lib/store';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 const categories = ['All', 'Exotic', 'Bouquets', 'Premium', 'Roses', 'Seasonal'];
 
@@ -83,7 +84,7 @@ export default function AdminProducts() {
       }
 
       try {
-        const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/ToggleProductVisibility/${id}/`);
+        const res = await axios.patch(`${API_BASE_URL}/api/v1/main/Bloomora/ToggleProductVisibility/${id}/`);
         if (res.status === 200) {
           updateAdminProduct(id, { ...product, visible: res.data.data.visible } as unknown as Product);
           toast.success('Product visibility updated');
@@ -155,7 +156,7 @@ export default function AdminProducts() {
       formData.append('isBestselling', String(form.isBestselling));
       formData.append('image', imageFile);
 
-      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/CreateProduct/`, formData, {
+      const res = await axios.post(`${API_BASE_URL}/api/v1/main/Bloomora/CreateProduct/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -237,7 +238,7 @@ export default function AdminProducts() {
         formData.append('image', imageFile);
       }
       
-      const res = await axios.put(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/UpdateProduct/${editProduct.id}/`, formData, {
+      const res = await axios.put(`${API_BASE_URL}/api/v1/main/Bloomora/UpdateProduct/${editProduct.id}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -281,7 +282,7 @@ export default function AdminProducts() {
       }
 
       try {
-        const res = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/DeleteProduct/${id}/`);
+        const res = await axios.delete(`${API_BASE_URL}/api/v1/main/Bloomora/DeleteProduct/${id}/`);
         if (res.status === 200) {
            deleteAdminProduct(id);
            toast.success('Product permanently deleted');

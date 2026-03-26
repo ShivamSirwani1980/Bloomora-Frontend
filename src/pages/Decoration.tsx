@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import useFetch from '@/hooks/useFetch';
 import axios from 'axios';
 import { useStore } from '@/lib/store';
+import { API_BASE_URL } from '@/lib/api';
 
 const getIconForServiceType = (type: string) => {
   switch (type?.toLowerCase()) {
@@ -23,7 +24,7 @@ export interface Service { id: string; title: string; description: string; start
 
 export default function Decoration() {
   const { settings, fetchSettings } = useStore();
-  const { data, loading, error } = useFetch<{ data: Service[] }>(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/getAllService/`);
+  const { data, loading, error } = useFetch<{ data: Service[] }>(`${API_BASE_URL}/api/v1/main/Bloomora/getAllService/`);
   const servicesData = data?.data || [];
  
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function Decoration() {
         additional_requirements: formData.requirements,
       };
 
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/BookService/`, payload);
+      await axios.post(`${API_BASE_URL}/api/v1/main/Bloomora/BookService/`, payload);
       await fetchSettings();
       toast.success('Thank you! Our team will contact you within 24 hours.');
       setFormData({

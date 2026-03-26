@@ -5,6 +5,7 @@ import { Flower2, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 import { useStore } from '@/lib/store';
 import axios from "axios";
 import CryptoJS from "crypto-js";
@@ -43,7 +44,7 @@ export default function AdminLogin() {
           iv: ivBase64,
         };
 
-        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/AdminLogin/`, payload);
+        const res = await axios.post(`${API_BASE_URL}/api/v1/main/Bloomora/AdminLogin/`, payload);
 
         const { encrypted_response, iv: respIv } = res.data;
         const decryptedBytes = CryptoJS.AES.decrypt(
@@ -80,7 +81,7 @@ export default function AdminLogin() {
           iv: ivBase64,
         };
 
-        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/VerifyAdminOTP/`, payload);
+        const res = await axios.post(`${API_BASE_URL}/api/v1/main/Bloomora/VerifyAdminOTP/`, payload);
 
         const { encrypted_response, iv: respIv } = res.data;
         const decryptedBytes = CryptoJS.AES.decrypt(

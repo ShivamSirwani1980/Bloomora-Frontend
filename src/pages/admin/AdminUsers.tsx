@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE_URL } from '@/lib/api';
 
 interface AdminUser {
   id: string;
@@ -32,7 +32,7 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}api/v1/main/Bloomora/Admin/Users/All/`);
+      const res = await axios.get(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Users/All/`);
       if (res.data.status === 200) {
         setUsers(res.data.users);
       } else {
@@ -52,7 +52,7 @@ export default function AdminUsers() {
 
   const toggleBlock = async (id: string) => {
     try {
-      const res = await axios.patch(`${API_BASE_URL}api/v1/main/Bloomora/Admin/Users/ToggleBlock/${id}/`);
+      const res = await axios.patch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Users/ToggleBlock/${id}/`);
       if (res.data.status === 200) {
         setUsers((prev) => prev.map((u) => u.id === id ? { ...u, status: res.data.data.status } : u));
         toast.success(res.data.message);
@@ -68,7 +68,7 @@ export default function AdminUsers() {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     
     try {
-      const res = await axios.delete(`${API_BASE_URL}api/v1/main/Bloomora/Admin/Users/Delete/${id}/`);
+      const res = await axios.delete(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Users/Delete/${id}/`);
       if (res.data.status === 200) {
         setUsers((prev) => prev.filter((u) => u.id !== id));
         toast.success('User deleted successfully');

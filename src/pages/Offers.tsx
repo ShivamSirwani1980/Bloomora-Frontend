@@ -36,12 +36,11 @@ export default function Offers() {
         `${API_BASE_URL}/api/v1/main/Bloomora/GetAllOffer/`
       )
       .then((res) => {
-        console.log('API DATA:', res.data);
         // ⭐ Filter only active coupons for the public page
         const activeCoupons = res.data.data.filter((c: any) => c.active !== false);
         setCoupons(activeCoupons);
       })
-      .catch((err) => console.log('API ERROR:', err));
+      .catch((err) => {});
   }, []);
 
   const copyCode = (code: string) => {

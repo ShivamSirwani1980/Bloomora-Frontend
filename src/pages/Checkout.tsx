@@ -102,7 +102,6 @@ export default function Checkout() {
     return Object.keys(newErrors).length === 0;
   };
 
-     console.log(cart);
 
   useEffect(() => {
     if (!isAuthenticated) {
