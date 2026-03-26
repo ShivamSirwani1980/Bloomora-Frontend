@@ -46,6 +46,7 @@ import '@fontsource/playfair-display/600.css';
 import '@fontsource/playfair-display/700.css';
 import { useStore } from '@/lib/store';
 import { useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 
 const queryClient = new QueryClient();
 
@@ -56,7 +57,6 @@ function AppRoutes() {
 
   useEffect(() => {
     if (isAuthenticated && user?.email) {
-      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
       fetch(`${API_BASE_URL}/api/v1/main/Bloomora/User/State/Sync/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

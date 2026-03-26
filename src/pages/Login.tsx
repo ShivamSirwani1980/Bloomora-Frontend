@@ -9,6 +9,7 @@ import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 import axios from "axios";
 import CryptoJS from "crypto-js";
+import { API_BASE_URL } from "@/lib/api";
 
 const ENCRYPTION_KEY_BASE64 = import.meta.env.VITE_ENCRYPTION_KEY;
 
@@ -30,7 +31,7 @@ export default function Login() {
 
   const syncUserStateFromDB = async (emailToSync: string) => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/User/State/`, {
+      const res = await axios.get(`${API_BASE_URL}/api/v1/main/Bloomora/User/State/`, {
         params: { email: emailToSync }
       });
       if (res.data && res.data.data) {
@@ -78,7 +79,7 @@ export default function Login() {
 
   // GOOGLE AUTH
   const handleGoogleAuth = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Google/`;
+    window.location.href = `${API_BASE_URL}/api/v1/main/Bloomora/Google/`;
   };
 
   const validateForm = () => {
@@ -165,8 +166,8 @@ export default function Login() {
       }
 
       const url = isLogin
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Login/`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Signup/`;
+        ? `${API_BASE_URL}/api/v1/main/Bloomora/Login/`
+        : `${API_BASE_URL}/api/v1/main/Bloomora/Signup/`;
 
       const res = await axios.post(url, payload);
 

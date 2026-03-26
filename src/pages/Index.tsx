@@ -10,6 +10,7 @@ import useFetch from "@/hooks/useFetch";
 import { BestSellingResponse } from "@/lib/store";
 import { ProductCard } from "@/components/ProductCard";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Offer {
   id: string;
@@ -51,8 +52,8 @@ export default function Index() {
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-        const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
         const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/GetAllOffer/`);
+        const data = await response.json();
         const data = await response.json();
         if (data.status === 200) {
           setOffers(data.data);
@@ -71,7 +72,7 @@ export default function Index() {
 
 const { data: fetchedProducts, loading, error } =
   useFetch<BestSellingResponse>(
-    `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
+    `${API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
   );
 
 function TestimonialsSection() {
@@ -81,7 +82,6 @@ function TestimonialsSection() {
   useEffect(() => {
     const fetchFeedbacks = async () => {
       try {
-        const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
         const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Feedback/All/?limit=4`);
         const data = await response.json();
         if (data.status === 200) {

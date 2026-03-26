@@ -6,6 +6,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 
 // ─────────────────────────────────────────────────────────────
 //  Type declarations for Razorpay (avoids TypeScript errors)
@@ -42,8 +43,7 @@ interface RazorpayResponse {
 // ─────────────────────────────────────────────────────────────
 //  Config
 // ─────────────────────────────────────────────────────────────
-// Strip trailing slash so URLs like `${API_BASE_URL}/payment/...` always work
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+// (Removed manual API_BASE_URL in favor of central @/lib/api)
 
 // ─────────────────────────────────────────────────────────────
 //  Helper: load Razorpay checkout.js script once

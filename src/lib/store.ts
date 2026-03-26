@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toast } from 'sonner';
+import { API_BASE_URL } from './api';
 
 // Product Types
 export interface Product {
@@ -448,7 +449,6 @@ export const useStore = create<StoreState>()(
       
       fetchNotifications: async () => {
         try {
-          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
           const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Notifications/`);
           const result = await response.json();
           if (result.status === 200) {
@@ -464,7 +464,6 @@ export const useStore = create<StoreState>()(
 
       markNotificationRead: async (id) => {
         try {
-          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
           const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Notifications/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -483,7 +482,6 @@ export const useStore = create<StoreState>()(
 
       markAllNotificationsRead: async () => {
         try {
-          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
           const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Notifications/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -506,7 +504,6 @@ export const useStore = create<StoreState>()(
 
       fetchSettings: async () => {
         try {
-          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
           const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Settings/`);
           const result = await response.json();
           if (result.data) {
@@ -519,7 +516,6 @@ export const useStore = create<StoreState>()(
 
       contactSupport: async (data) => {
         try {
-          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
           const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Support/Contact/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
