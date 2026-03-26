@@ -27,18 +27,42 @@ const sidebarLinks = [
     { name: 'Settings', path: '/admin/settings', icon: Settings },
 ];
 
+const getApiBase = () => {
+    const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    return envUrl.replace(/\/$/, '');
+};
+
+const API_BASE_URL = getApiBase();
+
 export function AdminLayout({ children }: AdminLayoutProps) {
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
-    const { setAdminAuthenticated, isAdminAuthenticated } = useStore();
+    const { 
+        settings, setSettings, setAdminAuthenticated, isAdminAuthenticated,
+        fetchNotifications, unreadNotificationsCount 
+    } = useStore();
 
     useEffect(() => {
         if (!isAdminAuthenticated) {
             navigate('/admin/login');
+        } else {
+            fetchNotifications();
+            // Optional: poll every 30 seconds
+            const interval = setInterval(fetchNotifications, 30000);
+            return () => clearInterval(interval);
         }
-    }, [isAdminAuthenticated, navigate]);
+    }, [isAdminAuthenticated, navigate, fetchNotifications]);
+
+    useEffect(() => {
+        if (!settings && isAdminAuthenticated) {
+            fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Settings/`)
+                .then(res => res.json())
+                .then(res => { if (res.data) setSettings(res.data); })
+                .catch(err => console.error('Failed to fetch global settings:', err));
+        }
+    }, [settings, setSettings]);
 
     const isActive = (path: string) => {
         if (path === '/admin') return location.pathname === '/admin';
@@ -50,12 +74,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             {/* Logo */}
             <div className="p-4 border-b border-border/50">
                 <Link to="/admin" className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Flower2 className="w-5 h-5 text-primary" />
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
+                        {settings?.logo_url ? (
+                            <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                        ) : (
+                            <Flower2 className="w-5 h-5 text-primary" />
+                        )}
                     </div>
                     {!collapsed && (
                         <div>
-                            <span className="font-display text-lg font-bold text-gradient">Bloomora</span>
+                            <span className="font-display text-lg font-bold text-gradient truncate max-w-[120px] block">
+                                {settings?.site_name || 'Bloomora'}
+                            </span>
                             <p className="text-[10px] text-muted-foreground -mt-1">Admin Panel</p>
                         </div>
                     )}
@@ -96,8 +126,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 >
                     <Bell className="w-4 h-4 shrink-0" />
                     {!collapsed && <span>Notifications</span>}
-                    {!collapsed && (
-                        <span className="ml-auto w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold">3</span>
+                    {!collapsed && unreadNotificationsCount > 0 && (
+                        <span className="ml-auto w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold">
+                            {unreadNotificationsCount}
+                        </span>
                     )}
                 </Link>
                 <button

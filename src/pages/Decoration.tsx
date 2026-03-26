@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, animate } from 'framer-motion';
 import { Calendar, MapPin, DollarSign, Send, CheckCircle2 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import useFetch from '@/hooks/useFetch';
 import axios from 'axios';
+import { useStore } from '@/lib/store';
 
 const getIconForServiceType = (type: string) => {
   switch (type?.toLowerCase()) {
@@ -21,8 +22,15 @@ const getIconForServiceType = (type: string) => {
 export interface Service { id: string; title: string; description: string; starting_price: string; image_url: string; service_type: string; }
 
 export default function Decoration() {
+  const { settings, fetchSettings } = useStore();
   const { data, loading, error } = useFetch<{ data: Service[] }>(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/getAllService/`);
   const servicesData = data?.data || [];
+ 
+  useEffect(() => {
+    if (!settings) {
+      fetchSettings();
+    }
+  }, [settings, fetchSettings]);
 
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +61,7 @@ export default function Decoration() {
       };
 
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/BookService/`, payload);
-
+      await fetchSettings();
       toast.success('Thank you! Our team will contact you within 24 hours.');
       setFormData({
         name: '',
@@ -71,6 +79,21 @@ export default function Decoration() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const DisplayNumber = ({ value, suffix = '' }: { value: string | number, suffix?: string }) => {
+    const num = parseInt(String(value)) || 0;
+    const [display, setDisplay] = useState(0);
+
+    useEffect(() => {
+      const controls = animate(0, num, {
+        duration: 1.5,
+        onUpdate: (latest) => setDisplay(Math.round(latest)),
+      });
+      return () => controls.stop();
+    }, [num]);
+
+    return <span>{display}{suffix}</span>;
   };
 
   return (
@@ -342,22 +365,27 @@ export default function Decoration() {
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
-              { title: '500+', subtitle: 'Events Decorated' },
-              { title: '100%', subtitle: 'Client Satisfaction' },
-              { title: '50+', subtitle: 'Professional Decorators' },
-              { title: '24/7', subtitle: 'Customer Support' },
+              { title: settings?.total_decorations ?? '0', subtitle: 'Total Decorations Booked', isCountable: true },
+              { title: '100', subtitle: 'Client Satisfaction', suffix: '%', isCountable: true },
+              { title: '24/7', subtitle: 'Customer Support', isCountable: false },
             ].map((stat, index) => (
               <motion.div
-                key={stat.title}
+                key={stat.subtitle}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 className="text-center p-6 bg-card rounded-2xl border border-border"
               >
-                <p className="text-4xl font-bold text-gradient mb-2">{stat.title}</p>
+                <p className="text-4xl font-bold text-gradient mb-2">
+                  {stat.isCountable ? (
+                    <DisplayNumber value={stat.title} suffix={stat.suffix} />
+                  ) : (
+                    stat.title
+                  )}
+                </p>
                 <p className="text-muted-foreground">{stat.subtitle}</p>
               </motion.div>
             ))}

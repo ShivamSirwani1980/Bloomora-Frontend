@@ -166,7 +166,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     e.preventDefault();
 
     // ensure cart gets correct structure
-    addToCart({
+    const success = addToCart({
       id: product.id,
       name: product.name,
       image_url: image,
@@ -176,10 +176,13 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       review_count: reviews,
       tags,
       category: '',
-      isBestselling: false
+      isBestselling: false,
+      stock: product.stock,
     });
 
-    toast.success(`${product.name} added to cart!`);
+    if (success) {
+      toast.success(`${product.name} added to cart!`);
+    }
   };
 
   return (
@@ -214,6 +217,12 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                   {tag}
                 </span>
               ))}
+
+              {product.stock <= 0 && (
+                <span className="bg-destructive text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm animate-pulse uppercase">
+                  OUT OF STOCK
+                </span>
+              )}
             </div>
 
             {/* Wishlist */}
@@ -247,13 +256,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             {/* Add to Cart */}
             <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
               <Button
-                variant="hero"
+                variant={product.stock <= 0 ? "secondary" : "hero"}
                 size="sm"
                 className="w-full"
                 onClick={handleAddToCart}
+                disabled={product.stock <= 0}
               >
                 <ShoppingCart className="w-4 h-4" />
-                Add to Cart
+                {product.stock <= 0 ? "Sold Out" : "Add to Cart"}
               </Button>
             </div>
           </div>

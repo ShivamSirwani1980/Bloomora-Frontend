@@ -14,6 +14,7 @@ interface FlowerType {
   name: string;
   price: number;
   colors: string[];
+  stock: number;
 }
 
 interface WrapStyle {
@@ -121,6 +122,13 @@ export default function CustomBouquet() {
     const existing = selectedFlowers.find(
       (f) => f.type === flowerType.name && f.color === color
     );
+    
+    const currentQty = existing?.quantity || 0;
+    if (currentQty >= flowerType.stock) {
+      toast.error(`Only ${flowerType.stock} stems of ${color} ${flowerType.name} available.`);
+      return;
+    }
+
     if (existing) {
       setSelectedFlowers(
         selectedFlowers.map((f) =>
@@ -368,27 +376,33 @@ export default function CustomBouquet() {
                       className="border-b border-border pb-6 last:border-0 last:pb-0"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium text-foreground">
-                          {flower.name}
-                        </h3>
-                        <span className="text-sm text-muted-foreground">
-                          ₹{flower.price}/stem
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground italic">
+                            {flower.stock > 0 ? `${flower.stock} stems left` : "Out of Stock"}
+                          </span>
+                          <span className="text-sm text-muted-foreground border-l border-border pl-2">
+                            ₹{flower.price}/stem
+                          </span>
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {flower.colors.map((color) => {
                           const selected = selectedFlowers.find(
                             (f) => f.type === flower.name && f.color === color
                           );
+                          const isOutOfStock = flower.stock <= 0;
                           return (
                             <button
                               key={color}
+                              disabled={isOutOfStock}
                               onClick={() => addFlower(flower, color)}
                               className={cn(
-                                "px-4 py-2 rounded-full text-sm font-medium border transition-all",
+                                "px-4 py-2 rounded-full text-sm font-medium border transition-all relative overflow-hidden",
                                 selected
                                   ? "bg-primary text-primary-foreground border-primary"
-                                  : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                                  : isOutOfStock
+                                    ? "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                                    : "border-border text-muted-foreground hover:border-primary hover:text-primary"
                               )}
                             >
                               {color}

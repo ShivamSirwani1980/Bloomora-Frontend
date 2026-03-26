@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { ArrowRight, Truck, Clock, Sparkles, Shield, Loader2 } from "lucide-react";
+import { ArrowRight, Truck, Clock, Sparkles, Shield, Loader2, Star, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout/Layout";
 import { products, categories, testimonials } from "@/lib/data";
@@ -73,6 +73,100 @@ const { data: fetchedProducts, loading, error } =
     `${import.meta.env.VITE_API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
   );
 
+function TestimonialsSection() {
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeedbacks = async () => {
+      try {
+        const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+        const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Feedback/All/?limit=4`);
+        const data = await response.json();
+        if (data.status === 200) {
+          setFeedbacks(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch feedbacks:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeedbacks();
+  }, []);
+
+  if (loading) return null;
+  // If no feedbacks, don't show the section or show a placeholder? 
+  // The user wants it shown on landing page, so I'll keep it visible if possible or show static as fallback if empty.
+  const displayFeedbacks = feedbacks.length > 0 ? feedbacks : testimonials.slice(0, 4);
+
+  return (
+    <section className="section-padding bg-muted/30 overflow-hidden">
+      <div className="container-custom mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest mb-4">
+             <Star className="w-3 h-3 fill-primary" />
+             Client Stories
+          </div>
+          <h2 className="font-display text-4xl font-bold text-foreground mb-4">
+            Voices of Bloomora
+          </h2>
+          <p className="text-muted-foreground mb-8">
+            The heart of our service lies in the stories of our wonderful customers.
+          </p>
+          <Link to="/feedback">
+            <Button variant="outline" className="rounded-full border-primary/20 hover:border-primary hover:bg-primary/5 group transition-all">
+              View All Reviews <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {displayFeedbacks.map((fb, index) => (
+            <motion.div
+              key={fb.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-background rounded-2xl p-6 shadow-soft border border-border/50"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-lavender flex items-center justify-center text-primary-foreground font-semibold">
+                  {fb.avatar}
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">
+                    {fb.name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {fb.location}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-1 mb-3">
+                {Array.from({ length: fb.rating || 5 }).map((_, i) => (
+                  <Star 
+                    key={i} 
+                    className={`w-4 h-4 ${i < (fb.rating || 5) ? 'fill-gold text-gold' : 'text-stone-100'}`} 
+                  />
+                ))}
+              </div>
+              <p className="text-muted-foreground text-sm">
+                {fb.comment}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 const bestSellingProducts =
   fetchedProducts?.Data?.map((item) => ({
     id: item.id,
@@ -461,64 +555,7 @@ const bestSellingProducts =
       </section>
 
       {/* Testimonials */}
-      <section className="section-padding bg-muted/30">
-        <div className="container-custom mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              What Our Customers Say
-            </h2>
-            <p className="text-muted-foreground">
-              Join thousands of happy customers who trust Bloomora
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-background rounded-2xl p-6 shadow-soft border border-border/50"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-lavender flex items-center justify-center text-primary-foreground font-semibold">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      {testimonial.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {testimonial.location}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-1 mb-3">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <svg
-                      key={i}
-                      className="w-4 h-4 fill-gold text-gold"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  {testimonial.comment}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <TestimonialsSection />
 
       {/* Offers Slider */}
       <section className="section-padding">

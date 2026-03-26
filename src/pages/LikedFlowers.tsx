@@ -59,7 +59,7 @@ export default function LikedFlowers() {
                 Explore our beautiful collection and tap the heart icon on flowers you love.
               </p>
               <Link to="/shop">
-                <Button variant="hero" size="lg">
+                <Button variant="hero" size="xl">
                   <ShoppingBag className="w-5 h-5" />
                   Browse Flowers
                 </Button>

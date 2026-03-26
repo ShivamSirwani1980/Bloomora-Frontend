@@ -56,10 +56,15 @@ export default function Login() {
     const name = params.get("name");
 
     if (token && emailParam) {
+      const dobParam = params.get("dob");
+      
       setUser({
         id: "google-user",
         email: emailParam,
         name: name || "User",
+        firstName: (name || "User").split(' ')[0],
+        lastName: (name || "User").split(' ').slice(1).join(' ') || "",
+        dob: dobParam || null
       });
 
       localStorage.setItem("token", token); // ✅ Google login saves token
@@ -186,12 +191,16 @@ export default function Login() {
           localStorage.setItem("token", res.data.token);
         }
 
+        const fName = decryptedData.data.first_name || decryptedData.data.name?.split(' ')[0] || "User";
+        const lName = decryptedData.data.last_name || decryptedData.data.name?.split(' ').slice(1).join(' ') || "";
+
         setUser({
           id: decryptedData.data.id,
           email: decryptedData.data.email,
-          name: decryptedData.data.first_name 
-                 ? `${decryptedData.data.first_name} ${decryptedData.data.last_name || ''}`.trim() 
-                 : decryptedData.data.name || "User",
+          name: `${fName} ${lName}`.trim(),
+          firstName: fName,
+          lastName: lName,
+          dob: decryptedData.data.dob
         });
 
         await syncUserStateFromDB(decryptedData.data.email);
@@ -206,6 +215,9 @@ export default function Login() {
           id: res.data.data.user_id,
           email: email.toLowerCase(),
           name: `${firstName} ${lastName}`,
+          firstName: firstName,
+          lastName: lastName,
+          dob: dob
         });
 
         await syncUserStateFromDB(email.toLowerCase());

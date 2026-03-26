@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Flower2, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Shield, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useStore } from '@/lib/store';
 
 const footerLinks = {
   shop: [
@@ -20,6 +21,7 @@ const footerLinks = {
   support: [
     { name: 'Contact Us', path: '/contact' },
     { name: 'FAQs', path: '/faqs' },
+    { name: 'Customer Feedback', path: '/feedback' },
     { name: 'Track Order', path: '/dashboard' },
     { name: 'Shipping Info', path: '/faqs' },
     { name: 'Returns', path: '/faqs' },
@@ -41,6 +43,7 @@ const socialLinks = [
 ];
 
 export function Footer() {
+  const { settings } = useStore();
   return (
     <footer className="bg-gradient-to-b from-background to-rose-light/30 border-t border-border">
       <div className="container-custom mx-auto px-4 md:px-8 py-12 md:py-16">
@@ -48,25 +51,35 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-12">
           {/* Brand Section */}
           <div className="col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <Flower2 className="w-8 h-8 text-primary" />
-              <span className="font-display text-2xl font-bold text-gradient">Bloomora</span>
+            <Link to="/" className="flex items-center gap-2 mb-4 group">
+              <div className="relative w-9 h-9 flex items-center justify-center">
+                {settings?.logo_url ? (
+                  <div className="w-full h-full rounded-xl overflow-hidden border border-primary/20 bg-background/50 text-center">
+                    <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <Flower2 className="w-8 h-8 text-primary" />
+                )}
+              </div>
+              <span className="font-display text-2xl font-bold text-gradient">
+                {settings?.site_name || 'Bloomora'}
+              </span>
             </Link>
             <p className="text-muted-foreground mb-6 max-w-xs">
-              Your one-stop destination for exotic flowers, custom bouquets, and premium floral services.
+              {settings?.tagline || 'Your one-stop destination for exotic flowers, custom bouquets, and premium floral services.'}
             </p>
             <div className="space-y-3">
-              <a href="tel:+911234567890" className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors">
+              <a href={`tel:${settings?.support_phone || '+911234567890'}`} className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors">
                 <Phone className="w-4 h-4" />
-                <span>+91 123 456 7890</span>
+                <span>{settings?.support_phone || '+91 123 456 7890'}</span>
               </a>
-              <a href="mailto:hello@bloomora.com" className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors">
+              <a href={`mailto:${settings?.support_email || 'hello@bloomora.com'}`} className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors">
                 <Mail className="w-4 h-4" />
-                <span>hello@bloomora.com</span>
+                <span>{settings?.support_email || 'hello@bloomora.com'}</span>
               </a>
               <div className="flex items-center gap-3 text-muted-foreground">
                 <MapPin className="w-4 h-4" />
-                <span>Mumbai, India</span>
+                <span>{settings?.location || 'Mumbai, India'}</span>
               </div>
             </div>
           </div>

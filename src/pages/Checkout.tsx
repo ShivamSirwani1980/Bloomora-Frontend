@@ -66,16 +66,41 @@ function loadRazorpayScript(): Promise<boolean> {
 // ─────────────────────────────────────────────────────────────
 //  Component
 // ─────────────────────────────────────────────────────────────
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", 
+  "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", 
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", 
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", 
+  "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", 
+  "Lakshadweep", "Puducherry"
+].sort();
+
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cart, getCartTotal, clearCart, deliveryType, isAuthenticated, user, appliedCoupon } = useStore();
+  const { cart, getCartTotal, clearCart, deliveryType, isAuthenticated, user, appliedCoupon, settings } = useStore();
 
   const paymentMethod = 'RAZORPAY'; // Default payment method for this component
   const [address, setAddress] = useState({
-    street: '', city: '', state: '', pincode: '',
+    street: '', city: '', state: '', pincode: '', phone: '',
   });
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [isPaying, setIsPaying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<RazorpayResponse | null>(null);
+  const [brandedOrderId, setBrandedOrderId] = useState<string | null>(null);
+
+  const validate = () => {
+    const newErrors: Record<string, boolean> = {};
+    if (!address.street.trim()) newErrors.street = true;
+    if (!address.city.trim()) newErrors.city = true;
+    if (!address.state.trim()) newErrors.state = true;
+    // Pincode validation: 6 digits
+    if (!/^\d{6}$/.test(address.pincode.trim())) newErrors.pincode = true;
+    // Phone validation: 10 digits
+    if (!/^\d{10}$/.test(address.phone.trim())) newErrors.phone = true;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
      console.log(cart);
 
@@ -112,43 +137,88 @@ export default function Checkout() {
   if (paymentSuccess) {
     return (
       <Layout>
-        <div className="pt-24 section-padding">
-          <div className="container-custom mx-auto max-w-lg text-center">
+        <div className="pt-32 pb-24 section-padding min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-background">
+          <div className="container-custom mx-auto max-w-xl text-center">
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200 }}
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="bg-card/40 backdrop-blur-xl rounded-[2.5rem] p-10 border border-border/50 shadow-elevated relative overflow-hidden"
             >
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="w-12 h-12 text-green-600" />
+              {/* Premium Glow */}
+              <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/20 rounded-full blur-[80px]" />
+              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-primary/20 rounded-full blur-[80px]" />
+
+              <div className="w-24 h-24 mx-auto mb-8 relative">
+                <motion.div 
+                  initial={{ rotate: -45, scale: 0 }}
+                  animate={{ rotate: 0, scale: 1 }}
+                  transition={{ delay: 0.2, type: 'spring' }}
+                  className="w-full h-full rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/20"
+                >
+                  <CheckCircle className="w-12 h-12 text-white" />
+                </motion.div>
+                <motion.div 
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 rounded-full border-4 border-green-500/30"
+                />
               </div>
-              <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+
+              <h1 className="font-display text-4xl font-bold text-foreground mb-3 tracking-tight">
                 Payment Successful! 🌸
               </h1>
-              <p className="text-muted-foreground mb-6">
-                Your order has been placed. Your flowers are on their way!
+              <p className="text-muted-foreground text-lg mb-8 max-w-sm mx-auto leading-relaxed">
+                Your order was placed successfully. Your premium flowers are being prepared with love!
               </p>
 
-              <div className="bg-card rounded-2xl p-6 border border-border text-left space-y-3 mb-8">
-                <h2 className="font-semibold text-foreground flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-green-600" /> Payment Details
-                </h2>
-                <div className="text-sm space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Payment ID</span>
-                    <span className="font-mono text-xs text-foreground">{paymentSuccess.razorpay_payment_id}</span>
+              <div className="bg-muted/40 backdrop-blur-md rounded-2xl p-6 border border-border/50 text-left space-y-4 mb-10">
+                <div className="flex items-center justify-between pb-4 border-b border-border/50">
+                   <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    <span className="font-semibold text-foreground">Booking Confirmed</span>
+                   </div>
+                   <span className="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">Priority Handling</span>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-card/60 p-4 rounded-xl border border-border/30">
+                    <span className="text-sm text-muted-foreground font-medium">Order ID</span>
+                    <span className="font-display font-bold text-rose-500 text-lg tracking-wide">{brandedOrderId || "ORD-XXXXXX"}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Order ID</span>
-                    <span className="font-mono text-xs text-foreground">{paymentSuccess.razorpay_order_id}</span>
+                  <div className="flex justify-between items-center px-3">
+                    <span className="text-xs text-muted-foreground">Transaction ID</span>
+                    <span className="font-mono text-[10px] text-muted-foreground/70 uppercase">{paymentSuccess.razorpay_payment_id}</span>
                   </div>
                 </div>
               </div>
 
-              <Button variant="hero" size="xl" onClick={() => navigate('/dashboard')}>
-                Go to Dashboard
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button 
+                  variant="hero" 
+                  size="xl" 
+                  onClick={() => navigate(`/order-tracking/${brandedOrderId}`)} 
+                  className="w-full h-14 rounded-2xl shadow-lg shadow-primary/20"
+                >
+                  Track Order
+                </Button>
+                <button 
+                  onClick={() => navigate('/dashboard')} 
+                  className="text-xs font-bold text-stone-500 hover:text-rose-600 transition-colors uppercase tracking-widest mt-2"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
             </motion.div>
+            
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="mt-8 text-sm text-muted-foreground"
+            >
+              A confirmation email has been sent to your inbox.
+            </motion.p>
           </div>
         </div>
       </Layout>
@@ -165,9 +235,9 @@ export default function Checkout() {
       return;
     }
 
-    // Basic address validation
-    if (!address.street || !address.city || !address.pincode) {
-      toast.error('Please fill in your delivery address');
+    // Robust validation
+    if (!validate()) {
+      toast.error('Please fix the errors in your delivery address');
       return;
     }
 
@@ -196,7 +266,8 @@ export default function Checkout() {
             street_address: address.street,
             city: address.city,
             state: address.state,
-            pincode: address.pincode
+            pincode: address.pincode,
+            phone: address.phone
           },
           payment_method: paymentMethod.toUpperCase()
         }),
@@ -239,7 +310,8 @@ export default function Checkout() {
                   street_address: address.street,
                   city: address.city,
                   state: address.state,
-                  pincode: address.pincode
+                  pincode: address.pincode,
+                  phone: address.phone
                 },
                 payment_method: 'RAZORPAY',
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -252,6 +324,7 @@ export default function Checkout() {
 
             if (finalizeRes.ok || finalizeData.status === 200) {
               clearCart();
+              setBrandedOrderId(finalizeData.custom_order_id);
               setPaymentSuccess(response);
               toast.success('Payment successful! Order confirmed 🌸');
               // 5️⃣ Send order details to Integrated Checkout API
@@ -272,7 +345,8 @@ export default function Checkout() {
                     street_address: address.street,
                     city: address.city,
                     state: address.state,
-                    pincode: address.pincode
+                    pincode: address.pincode,
+                    phone: address.phone
                   }
                 };
 
@@ -296,9 +370,9 @@ export default function Checkout() {
         },
 
         prefill: {
-          name: '',
-          email: '',
-          contact: '',
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: address.phone || '',
         },
 
         theme: { color: '#E91E8C' },
@@ -334,30 +408,78 @@ export default function Checkout() {
               <MapPin className="w-5 h-5 text-primary" /> Delivery Address
             </h2>
             <div className="grid md:grid-cols-2 gap-4">
-              <input
-                placeholder="Street Address"
-                className="input-premium md:col-span-2"
-                value={address.street}
-                onChange={(e) => setAddress({ ...address, street: e.target.value })}
-              />
-              <input
-                placeholder="City"
-                className="input-premium"
-                value={address.city}
-                onChange={(e) => setAddress({ ...address, city: e.target.value })}
-              />
-              <input
-                placeholder="State"
-                className="input-premium"
-                value={address.state}
-                onChange={(e) => setAddress({ ...address, state: e.target.value })}
-              />
-              <input
-                placeholder="Pincode"
-                className="input-premium"
-                value={address.pincode}
-                onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
-              />
+              <div className="md:col-span-2">
+                <input
+                  placeholder="Street Address"
+                  className={`input-premium w-full ${errors.street ? 'border-red-500 bg-red-50/50' : ''}`}
+                  value={address.street}
+                  onChange={(e) => {
+                    setAddress({ ...address, street: e.target.value });
+                    if (errors.street) setErrors({ ...errors, street: false });
+                  }}
+                />
+                {errors.street && <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1 ml-2">Street address is required</p>}
+              </div>
+
+              <div>
+                <input
+                  placeholder="City"
+                  className={`input-premium w-full ${errors.city ? 'border-red-500 bg-red-50/50' : ''}`}
+                  value={address.city}
+                  onChange={(e) => {
+                    setAddress({ ...address, city: e.target.value });
+                    if (errors.city) setErrors({ ...errors, city: false });
+                  }}
+                />
+                 {errors.city && <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1 ml-2">City is required</p>}
+              </div>
+
+              <div>
+                <select
+                  className={`input-premium w-full bg-transparent ${errors.state ? 'border-red-500 bg-red-50/50' : ''}`}
+                  value={address.state}
+                  onChange={(e) => {
+                    setAddress({ ...address, state: e.target.value });
+                    if (errors.state) setErrors({ ...errors, state: false });
+                  }}
+                >
+                  <option value="" disabled className="text-muted-foreground bg-background">Select State</option>
+                  {INDIAN_STATES.map(state => (
+                    <option key={state} value={state} className="text-foreground bg-background">{state}</option>
+                  ))}
+                </select>
+                {errors.state && <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1 ml-2">State is required</p>}
+              </div>
+
+              <div>
+                <input
+                  placeholder="Pincode"
+                  className={`input-premium w-full ${errors.pincode ? 'border-red-500 bg-red-50/50' : ''}`}
+                  value={address.pincode}
+                  maxLength={6}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setAddress({ ...address, pincode: val });
+                    if (errors.pincode) setErrors({ ...errors, pincode: false });
+                  }}
+                />
+                {errors.pincode && <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1 ml-2">Enter valid 6-digit pincode</p>}
+              </div>
+
+              <div className="md:col-span-2">
+                <input
+                  placeholder="Phone Number (10 digits)"
+                  className={`input-premium w-full ${errors.phone ? 'border-red-500 bg-red-50/50' : ''}`}
+                  value={address.phone}
+                  maxLength={10}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setAddress({ ...address, phone: val });
+                    if (errors.phone) setErrors({ ...errors, phone: false });
+                  }}
+                />
+                {errors.phone && <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1 ml-2">Enter valid 10-digit phone number</p>}
+              </div>
             </div>
           </div>
 
@@ -409,7 +531,7 @@ export default function Checkout() {
                   Delivery ({deliveryType})
                 </span>
                 <span className={deliveryType === 'express' ? 'font-semibold' : 'font-semibold text-green-600'}>
-                  {deliveryType === 'express' ? '₹99' : 'FREE'}
+                  {deliveryType === 'express' ? `₹${settings?.express_delivery_fee ?? 99}` : 'FREE'}
                 </span>
               </div>
             </div>

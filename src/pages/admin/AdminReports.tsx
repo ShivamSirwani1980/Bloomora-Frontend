@@ -5,32 +5,63 @@ import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { toast } from 'sonner';
 
-const revenueData = [
-  { month: 'Sep', revenue: 320000 }, { month: 'Oct', revenue: 410000 }, { month: 'Nov', revenue: 520000 },
-  { month: 'Dec', revenue: 680000 }, { month: 'Jan', revenue: 450000 }, { month: 'Feb', revenue: 580000 },
-];
+import { useState, useEffect } from 'react';
 
-const bestSelling = [
-  { name: 'Red Roses', value: 456 }, { name: 'Orchid Collection', value: 312 },
-  { name: 'Peony Paradise', value: 289 }, { name: 'Sunflower Bouquet', value: 267 },
-  { name: 'Custom Bouquets', value: 198 },
-];
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  return envUrl.replace(/\/$/, '');
+};
+
+const API_BASE_URL = getApiBase();
 
 const COLORS = ['hsl(345, 65%, 65%)', 'hsl(280, 40%, 75%)', 'hsl(42, 85%, 55%)', 'hsl(140, 25%, 75%)', 'hsl(15, 70%, 70%)'];
 
-const userGrowth = [
-  { month: 'Sep', users: 1200 }, { month: 'Oct', users: 1580 }, { month: 'Nov', users: 2100 },
-  { month: 'Dec', users: 2650 }, { month: 'Jan', users: 2980 }, { month: 'Feb', users: 3420 },
-];
-
-const deliveryStats = [
-  { type: 'Express (On-time)', value: 92 },
-  { type: 'Express (Delayed)', value: 8 },
-  { type: 'Standard (On-time)', value: 88 },
-  { type: 'Standard (Delayed)', value: 12 },
-];
-
 export default function AdminReports() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Reports/All/`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+        }
+        const result = await response.json();
+        if (result.data) {
+          setData(result.data);
+        }
+      } catch (error) {
+        console.error('Analytics Fetch Error:', error);
+        toast.error('Failed to load real-time analytics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-muted-foreground animate-pulse">Aggregating business insights...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Fallback to static structure if data fetch fails, but use live data if available
+  const revenueData = data?.revenueData || [];
+  const bestSelling = data?.bestSelling || [];
+  const userGrowth = data?.userGrowth || [];
+  const deliveryStats = data?.deliveryStats || [];
+
   return (
     <AdminLayout>
       <div className="space-y-6">

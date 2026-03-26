@@ -28,6 +28,7 @@ interface ApiProduct {
   discount_label?: string;
   tags?: string[];
   description?: string;
+  stock: number;
 }
 
 interface ProductsResponse {
@@ -68,6 +69,7 @@ export default function Shop() {
     tags: item.tags || [],
     category: item.category,
     description: item.description || '',
+    stock: item.stock || 0,
   }));
 
   // ✅ Apply Frontend Filters

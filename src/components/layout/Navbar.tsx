@@ -178,11 +178,18 @@ const navLinks = [
   { name: 'Offers', path: '/offers' },
 ];
 
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  return envUrl.replace(/\/$/, '');
+};
+
+const API_BASE_URL = getApiBase();
+
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { getCartCount, isAuthenticated, getLikedCount, isAdminAuthenticated } = useStore();
+  const { getCartCount, isAuthenticated, getLikedCount, isAdminAuthenticated, settings, setSettings } = useStore();
   const cartCount = getCartCount();
   const likedCount = getLikedCount();
 
@@ -198,6 +205,15 @@ export function Navbar() {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (!settings) {
+      fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Settings/`)
+        .then(res => res.json())
+        .then(res => { if (res.data) setSettings(res.data); })
+        .catch(err => console.error('Failed to fetch global settings:', err));
+    }
+  }, [settings, setSettings]);
+
   return (
     <header
       className={cn(
@@ -211,12 +227,20 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <Flower2 className="w-8 h-8 text-primary transition-transform duration-500 group-hover:rotate-12" />
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative w-9 h-9 flex items-center justify-center">
+              {settings?.logo_url ? (
+                <div className="w-full h-full rounded-xl overflow-hidden border border-primary/20 bg-background/50">
+                   <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <>
+                  <Flower2 className="w-8 h-8 text-primary transition-transform duration-500 group-hover:rotate-12" />
+                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                </>
+              )}
             </div>
             <span className="font-display text-2xl font-bold text-gradient">
-              Bloomora
+              {settings?.site_name || 'Bloomora'}
             </span>
           </Link>
 

@@ -287,6 +287,7 @@ import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { toast } from 'sonner';
 function CartImage({ item }: { item: any }) {
   const [error, setError] = useState(false);
   const src = item.image_url || item.image;
@@ -319,6 +320,7 @@ export default function Cart() {
     appliedCoupon,
     applyCoupon,
     removeCoupon,
+    settings,
   } = useStore();
 
   const [couponInput, setCouponInput] = useState('');
@@ -333,7 +335,8 @@ export default function Cart() {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const deliveryCharge = deliveryType === 'express' ? 99 : 0;
+  const expressFee = settings?.express_delivery_fee ?? 99;
+  const deliveryCharge = deliveryType === 'express' ? expressFee : 0;
   const discount = appliedCoupon ? Math.round(subtotal * 0.1) : 0;
   const total = getCartTotal();
 
@@ -415,6 +418,12 @@ export default function Cart() {
                       ₹{item.price}
                     </p>
 
+                    {item.stock !== undefined && item.quantity >= item.stock && (
+                      <p className="text-[10px] text-destructive font-black uppercase mt-1 animate-pulse">
+                        ⚠️ Maximum available stock reached ({item.stock} left)
+                      </p>
+                    )}
+
                     {/* QUANTITY CONTROLS */}
                     <div className="flex items-center gap-4 mt-3">
 
@@ -432,8 +441,14 @@ export default function Cart() {
                         </span>
 
                         <button
+                          disabled={item.quantity >= (item.stock ?? Infinity)}
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-background rounded-lg transition-colors"
+                          className={cn(
+                            "w-8 h-8 flex items-center justify-center rounded-lg transition-colors",
+                            item.quantity >= (item.stock ?? Infinity)
+                              ? "opacity-50 cursor-not-allowed bg-muted"
+                              : "hover:bg-background"
+                          )}
                         >
                           <Plus className="w-4 h-4" />
                         </button>
@@ -497,7 +512,7 @@ export default function Cart() {
                     >
                       <Truck className="w-5 h-5" />
                       <span className="flex-1 text-left">Express (10-30 min)</span>
-                      <span>+₹99</span>
+                      <span>+₹{expressFee}</span>
                     </button>
 
                     <button

@@ -17,9 +17,11 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Orders from "./pages/Orders";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
 import FAQs from "./pages/FAQs";
+import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
 import LikedFlowers from "./pages/LikedFlowers";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -34,6 +36,9 @@ import AdminInventory from "./pages/admin/AdminInventory";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
+import OrderTracking from "./pages/OrderTracking";
+import { BirthdayExperience } from "./components/BirthdayExperience";
+import { SupportModal } from "./components/SupportModal";
 
 import '@fontsource/playfair-display/400.css';
 import '@fontsource/playfair-display/500.css';
@@ -51,8 +56,8 @@ function AppRoutes() {
 
   useEffect(() => {
     if (isAuthenticated && user?.email) {
-      // Sync user state with backend seamlessly
-      fetch('http://127.0.0.1:8000/api/v1/main/Bloomora/User/State/Sync/', {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+      fetch(`${API_BASE_URL}/api/v1/main/Bloomora/User/State/Sync/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -77,11 +82,14 @@ function AppRoutes() {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/orders" element={<Orders />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/about" element={<About />} />
       <Route path="/faqs" element={<FAQs />} />
+      <Route path="/feedback" element={<Feedback />} />
       <Route path="*" element={<NotFound />} />
       <Route path="/liked-flowers" element={<LikedFlowers />} />
+      <Route path="/order-tracking/:id" element={<OrderTracking />} />
 
       {/* Admin Routes */}
       <Route path="/admin" element={<AdminDashboard />} />
@@ -106,6 +114,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <BirthdayExperience />
+        <SupportModal />
         <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { toast } from 'sonner';
 
 // Product Types
 export interface Product {
@@ -19,6 +20,7 @@ export interface Product {
   tags?: string[];
   description?: string;
   inStock?: boolean;
+  stock?: number;
 }
 
 export interface BestSellingResponse {
@@ -57,6 +59,7 @@ export interface User {
   name?: string;
   firstName?: string;
   lastName?: string;
+  dob?: string;
   phone?: string;
   addresses?: Address[];
 }
@@ -90,11 +93,21 @@ export interface Order {
   couponApplied?: string;
 }
 
+export interface Notification {
+  _id: string;
+  type: 'order' | 'stock' | 'booking' | 'generic';
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+  data?: any;
+}
+
 // Store Interface
 interface StoreState {
   // Cart
   cart: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
+  addToCart: (product: Product, quantity?: number) => boolean;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -124,6 +137,7 @@ interface StoreState {
 
   // Coupon
   appliedCoupon: string | null;
+  setAppliedCoupon: (code: string | null) => void;
   applyCoupon: (code: string) => boolean;
   removeCoupon: () => void;
 
@@ -151,6 +165,25 @@ interface StoreState {
   setCart: (cartItems: CartItem[]) => void;
   setLikedProducts: (products: Product[]) => void;
   clearUserSession: () => void;
+
+  // Global Settings
+  settings: any;
+  setSettings: (settings: any) => void;
+
+  // Notifications
+  notifications: Notification[];
+  unreadNotificationsCount: number;
+  setNotifications: (notifications: Notification[]) => void;
+  setUnreadNotificationsCount: (count: number) => void;
+  fetchNotifications: () => Promise<void>;
+  markNotificationRead: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  
+  // Support
+  isSupportOpen: boolean;
+  setSupportOpen: (open: boolean) => void;
+  fetchSettings: () => Promise<void>;
+  contactSupport: (data: { name: string; email: string; message: string }) => Promise<{ success: boolean; message: string }>;
 }
 
 // Available Coupons
@@ -168,21 +201,33 @@ export const useStore = create<StoreState>()(
       cart: [],
 
       addToCart: (product, quantity = 1) => {
+        let success = true;
         set((state) => {
           const existingItem = state.cart.find((item) => item.id === product.id);
+          const currentQty = existingItem ? existingItem.quantity : 0;
+          const totalRequested = currentQty + quantity;
+          
+          // Check Stock Limit
+          if (product.stock !== undefined && totalRequested > product.stock) {
+            toast.error(`Only ${product.stock} units available for ${product.name}`);
+            success = false;
+            return { cart: state.cart };
+          }
+
           if (existingItem) {
             return {
               cart: state.cart.map((item) =>
                 item.id === product.id
-                  ? { ...item, quantity: item.quantity + quantity }
+                  ? { ...item, quantity: totalRequested }
                   : item
               ),
             };
           }
           return {
-            cart: [...state.cart, { ...product, quantity }],
+            cart: [...state.cart, { ...product, quantity: totalRequested }],
           };
         });
+        return success;
       },
 
       removeFromCart: (productId) => {
@@ -201,11 +246,22 @@ export const useStore = create<StoreState>()(
           get().removeFromCart(productId);
           return;
         }
-        set((state) => ({
-          cart: state.cart.map((item) =>
-            item.id === productId ? { ...item, quantity } : item
-          ),
-        }));
+
+        set((state) => {
+          const item = state.cart.find((i) => i.id === productId);
+          
+          // Check Stock Limit
+          if (item && item.stock !== undefined && quantity > item.stock) {
+            toast.error(`Maximum stock reached (${item.stock} available)`);
+            return { cart: state.cart };
+          }
+
+          return {
+            cart: state.cart.map((i) =>
+              i.id === productId ? { ...i, quantity } : i
+            ),
+          };
+        });
       },
 
       clearCart: () => set({ 
@@ -222,13 +278,23 @@ export const useStore = create<StoreState>()(
         );
 
         // Apply coupon discount
-        if (state.appliedCoupon && validCoupons[state.appliedCoupon]) {
-          total = total * (1 - validCoupons[state.appliedCoupon] / 100);
+        let discountPercent = 0;
+        if (state.appliedCoupon) {
+          if (validCoupons[state.appliedCoupon]) {
+            discountPercent = validCoupons[state.appliedCoupon];
+          } else if (state.appliedCoupon === 'BIRTHDAYBLOOM') {
+            discountPercent = 15;
+          }
+        }
+
+        if (discountPercent > 0) {
+          total = total * (1 - discountPercent / 100);
         }
 
         // Add delivery charge
         if (state.deliveryType === 'express') {
-          total += 99;
+          const expressFee = state.settings?.express_delivery_fee ?? 99;
+          total += expressFee;
         }
 
         return Math.round(total);
@@ -276,14 +342,42 @@ export const useStore = create<StoreState>()(
 
       // Coupon
       appliedCoupon: null,
+      setAppliedCoupon: (code) => set({ appliedCoupon: code }),
       applyCoupon: (code) => {
         const upperCode = code.toUpperCase().trim();
-        if (upperCode) {
+        const state = get();
+
+        if (upperCode === 'BIRTHDAYBLOOM') {
+          if (!state.isAuthenticated || !state.user) {
+            toast.error("Please login to use this coupon.");
+            return false;
+          }
+
+          if (!state.user.dob) {
+            toast.error("Birthday information not found.");
+            return false;
+          }
+
+          const today = new Date();
+          const mm_dd = `-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+          
+          if (!state.user.dob.includes(mm_dd)) {
+             toast.error("This coupon is only valid on your birthday!");
+             return false;
+          }
+
           set({ appliedCoupon: upperCode });
-          // Note: We'll let the backend determine the actual discount value
-          // during the checkout/cart update process.
+          toast.success("Birthday discount applied!");
           return true;
         }
+
+        if (validCoupons[upperCode]) {
+          set({ appliedCoupon: upperCode });
+          toast.success("Coupon applied successfully!");
+          return true;
+        }
+
+        toast.error("Invalid coupon code");
         return false;
       },
       removeCoupon: () => set({ appliedCoupon: null }),
@@ -339,7 +433,107 @@ export const useStore = create<StoreState>()(
         isAuthenticated: false,
         appliedCoupon: null,
         deliveryType: 'standard',
+        settings: null,
       }),
+
+      // Global Settings
+      settings: null,
+      setSettings: (settings) => set({ settings }),
+
+      // Notifications
+      notifications: [],
+      unreadNotificationsCount: 0,
+      setNotifications: (notifications) => set({ notifications }),
+      setUnreadNotificationsCount: (unreadNotificationsCount) => set({ unreadNotificationsCount }),
+      
+      fetchNotifications: async () => {
+        try {
+          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+          const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Notifications/`);
+          const result = await response.json();
+          if (result.status === 200) {
+            set({ 
+              notifications: result.data, 
+              unreadNotificationsCount: result.unread_count 
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch notifications:', error);
+        }
+      },
+
+      markNotificationRead: async (id) => {
+        try {
+          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+          const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Notifications/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_id: id })
+          });
+          if (response.ok) {
+            set((state) => ({
+              notifications: state.notifications.map(n => n._id === id ? { ...n, read: true } : n),
+              unreadNotificationsCount: Math.max(0, state.unreadNotificationsCount - 1)
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to mark notification as read:', error);
+        }
+      },
+
+      markAllNotificationsRead: async () => {
+        try {
+          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+          const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Notifications/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_id: null }) // null means mark all
+          });
+          if (response.ok) {
+            set((state) => ({
+              notifications: state.notifications.map(n => ({ ...n, read: true })),
+              unreadNotificationsCount: 0
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to mark all as read:', error);
+        }
+      },
+
+      // Support
+      isSupportOpen: false,
+      setSupportOpen: (open) => set({ isSupportOpen: open }),
+
+      fetchSettings: async () => {
+        try {
+          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+          const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Settings/`);
+          const result = await response.json();
+          if (result.data) {
+            set({ settings: result.data });
+          }
+        } catch (error) {
+          console.error('Failed to fetch settings:', error);
+        }
+      },
+
+      contactSupport: async (data) => {
+        try {
+          const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+          const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Support/Contact/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          const result = await response.json();
+          if (response.ok) {
+            return { success: true, message: result.message };
+          }
+          return { success: false, message: result.message || 'Failed to send message' };
+        } catch (error) {
+          return { success: false, message: 'Network error while sending message' };
+        }
+      }
     }),
     {
       name: 'bloomora-store',
