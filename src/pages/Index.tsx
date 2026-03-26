@@ -54,7 +54,6 @@ export default function Index() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/GetAllOffer/`);
         const data = await response.json();
-        const data = await response.json();
         if (data.status === 200) {
           setOffers(data.data);
         } else {
@@ -74,6 +73,8 @@ const { data: fetchedProducts, loading, error } =
   useFetch<BestSellingResponse>(
     `${API_BASE_URL}/api/v1/main/Bloomora/Get/BestSelling/`
   );
+
+
 
 function TestimonialsSection() {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
