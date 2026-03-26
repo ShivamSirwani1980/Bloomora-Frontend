@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 interface DobModalProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ export const DobModal: React.FC<DobModalProps> = ({ isOpen, email, onSuccess }) 
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/main/bloomora/user/update-dob/`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/main/bloomora/user/update-dob/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, dob }),

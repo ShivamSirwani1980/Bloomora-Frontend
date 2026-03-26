@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useStore } from '@/lib/store';
+import { API_BASE_URL } from '@/lib/api';
 
 interface DashboardData {
   stats: any[];
@@ -14,12 +15,6 @@ interface DashboardData {
   lowStockAlerts: any[];
 }
 
-const getApiBase = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  return envUrl.replace(/\/$/, '');
-};
-
-const API_BASE_URL = getApiBase();
 
 const statIcons: Record<string, any> = {
   orders: ShoppingCart,

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Paperclip, Loader2, Bot, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { json } from 'react-router-dom';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Message {
     id: string;
@@ -74,10 +75,10 @@ export function ChatBot() {
         }
 
         try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1/main/Bloomora/'}/api/v1/main/Bloomora/ChatAI/`, {
-    method: 'POST',
-    body: formData,
-});
+            const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/ChatAI/`, {
+                method: 'POST',
+                body: formData,
+            });
 
 const data = await response.json();
 

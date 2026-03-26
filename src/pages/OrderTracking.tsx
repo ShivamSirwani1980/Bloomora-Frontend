@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { API_BASE_URL } from '@/lib/api';
 
 // Stylized Map Component
 const AnimatedMap = ({ status }: { status: string }) => {
@@ -118,7 +119,7 @@ export default function OrderTracking() {
     const fetchOrder = async () => {
       try {
         const cleanId = id?.replace(/^#/, '');
-        const response = await fetch(`http://127.0.0.1:8000/api/v1/main/Bloomora/Order/Tracking/?order_id=${cleanId}`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Order/Tracking/?order_id=${cleanId}`);
         const data = await response.json();
         if (data.status === 200) {
           setOrder(data.order);
@@ -340,7 +341,7 @@ function FeedbackPrompt({ order }: { order: any }) {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/main/Bloomora/Feedback/Submit/`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/main/Bloomora/Feedback/Submit/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

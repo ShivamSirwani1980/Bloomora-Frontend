@@ -5,8 +5,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
+import { API_BASE_URL } from "@/lib/api";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {

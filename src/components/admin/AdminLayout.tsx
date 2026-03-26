@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { API_BASE_URL } from '@/lib/api';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
@@ -27,12 +28,6 @@ const sidebarLinks = [
     { name: 'Settings', path: '/admin/settings', icon: Settings },
 ];
 
-const getApiBase = () => {
-    const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    return envUrl.replace(/\/$/, '');
-};
-
-const API_BASE_URL = getApiBase();
 
 export function AdminLayout({ children }: AdminLayoutProps) {
     const [collapsed, setCollapsed] = useState(false);

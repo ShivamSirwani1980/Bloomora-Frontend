@@ -7,13 +7,8 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 import { useStore } from '@/lib/store';
+import { API_BASE_URL } from '@/lib/api';
 
-const getApiBase = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  return envUrl.replace(/\/$/, '');
-};
-
-const API_BASE_URL = getApiBase();
 
 export default function AdminSettings() {
   const { settings: globalSettings, setSettings: setGlobalSettings } = useStore();

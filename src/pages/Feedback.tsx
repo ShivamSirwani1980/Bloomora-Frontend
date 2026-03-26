@@ -4,8 +4,8 @@ import { Star, MessageSquare, Quote, ArrowLeft, Loader2, Sparkles, Heart } from 
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/layout/Layout';
+import { API_BASE_URL } from '@/lib/api';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 export default function Feedback() {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);

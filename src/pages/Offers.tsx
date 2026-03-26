@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 
 // 🔥 Coupon coming from backend (Mongo fields)
 interface Coupon {
@@ -32,7 +33,7 @@ export default function Offers() {
   useEffect(() => {
     axios
       .get<OfferResponse>(
-        'http://127.0.0.1:8000/api/v1/main/Bloomora/GetAllOffer/'
+        `${API_BASE_URL}/api/v1/main/Bloomora/GetAllOffer/`
       )
       .then((res) => {
         console.log('API DATA:', res.data);

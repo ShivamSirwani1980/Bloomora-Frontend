@@ -168,6 +168,7 @@ import { ShoppingCart, User, Menu, X, Search, Heart, Flower2, Shield } from 'luc
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
+import { API_BASE_URL } from '@/lib/api';
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -178,12 +179,6 @@ const navLinks = [
   { name: 'Offers', path: '/offers' },
 ];
 
-const getApiBase = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  return envUrl.replace(/\/$/, '');
-};
-
-const API_BASE_URL = getApiBase();
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);

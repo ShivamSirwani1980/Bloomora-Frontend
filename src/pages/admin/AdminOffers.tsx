@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { CouponModal } from '@/components/admin/CouponModal';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Coupon {
   id: string;
@@ -28,7 +29,7 @@ export default function AdminOffers() {
   const fetchCoupons = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://127.0.0.1:8000/api/v1/main/Bloomora/GetAllOffer/');
+      const response = await axios.get(`${API_BASE_URL}/api/v1/main/Bloomora/GetAllOffer/`);
       if (response.data.status === 200) {
         setCoupons(response.data.data);
       }
@@ -46,7 +47,7 @@ export default function AdminOffers() {
 
   const toggleActive = async (id: string) => {
     try {
-      const response = await axios.post(`http://127.0.0.1:8000/api/v1/main/Bloomora/ToggleOffer/${id}/`);
+      const response = await axios.post(`${API_BASE_URL}/api/v1/main/Bloomora/ToggleOffer/${id}/`);
       if (response.data.status === 200) {
         setCoupons((prev) => prev.map((c) => c.id === id ? { ...c, active: response.data.active } : c));
         toast.success(response.data.message);
@@ -59,7 +60,7 @@ export default function AdminOffers() {
   const deleteCoupon = async (id: string) => {
     if (!confirm('Are you sure you want to delete this coupon?')) return;
     try {
-      const response = await axios.delete(`http://127.0.0.1:8000/api/v1/main/Bloomora/DeleteOffer/${id}/`);
+      const response = await axios.delete(`${API_BASE_URL}/api/v1/main/Bloomora/DeleteOffer/${id}/`);
       if (response.data.status === 200) {
         setCoupons((prev) => prev.filter((c) => c.id !== id));
         toast.success('Coupon deleted');

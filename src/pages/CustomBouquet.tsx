@@ -6,6 +6,7 @@ import { Sparkles, ShoppingCart, Save, X } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
+import { API_BASE_URL } from "@/lib/api";
 import { toast } from "sonner";
 import Bouquet3D from "@/components/Bouquet3D";
 import { cn } from "@/lib/utils";
@@ -35,7 +36,6 @@ interface SelectedFlower {
   price: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/';
 
 // Wrap style color swatches for the UI
 const WRAP_SWATCHES: Record<string, string> = {
@@ -84,7 +84,7 @@ export default function CustomBouquet() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}api/v1/main/Bloomora/Admin/Bouquets/Config/`);
+        const res = await axios.get(`${API_BASE_URL}/api/v1/main/Bloomora/Admin/Bouquets/Config/`);
         if (res.data.status === 200) {
           setFlowerTypes(res.data.flowerTypes);
           setWrapStyles(res.data.wrapStyles);
@@ -202,7 +202,7 @@ export default function CustomBouquet() {
       };
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/CustomBouquet/Save/`,
+        `${API_BASE_URL}/api/v1/main/Bloomora/CustomBouquet/Save/`,
         {
           method: "POST",
           headers: {
@@ -265,7 +265,7 @@ export default function CustomBouquet() {
       };
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}api/v1/main/Bloomora/CreateCustom/Bouquet/`,
+        `${API_BASE_URL}/api/v1/main/Bloomora/CreateCustom/Bouquet/`,
         {
           method: "POST",
           headers: {

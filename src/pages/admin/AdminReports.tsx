@@ -6,13 +6,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { toast } from 'sonner';
 
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 
-const getApiBase = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  return envUrl.replace(/\/$/, '');
-};
-
-const API_BASE_URL = getApiBase();
 
 const COLORS = ['hsl(345, 65%, 65%)', 'hsl(280, 40%, 75%)', 'hsl(42, 85%, 55%)', 'hsl(140, 25%, 75%)', 'hsl(15, 70%, 70%)'];
 

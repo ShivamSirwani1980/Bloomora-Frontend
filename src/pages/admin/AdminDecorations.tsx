@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 import { 
   Calendar, MapPin, DollarSign, Plus, Trash2, 
   Image as ImageIcon, Loader2, X, CheckCircle2, ChevronRight
@@ -16,7 +17,6 @@ const statusColors: Record<string, string> = {
   Cancelled: 'bg-rose-100 text-rose-700 border-rose-200',
 };
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 export default function AdminDecorations() {
   const [activeTab, setActiveTab] = useState<'bookings' | 'services'>('bookings');

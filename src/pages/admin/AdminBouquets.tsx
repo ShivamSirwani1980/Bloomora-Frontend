@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, Edit2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 
 interface FlowerType {
   name: string;
@@ -23,7 +24,6 @@ interface PopularCombo {
   orders: number;
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 export default function AdminBouquets() {
   const [flowerTypes, setFlowerTypes] = useState<FlowerType[]>([]);

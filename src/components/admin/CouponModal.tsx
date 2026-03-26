@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import axios from "axios";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Coupon {
   id?: string;
@@ -66,7 +67,7 @@ export function CouponModal({ isOpen, onClose, onSuccess, coupon }: CouponModalP
       if (coupon?.id) {
         // Update existing coupon
         const response = await axios.put(
-          `http://127.0.0.1:8000/api/v1/main/Bloomora/UpdateOffer/${coupon.id}/`,
+          `${API_BASE_URL}/api/v1/main/Bloomora/UpdateOffer/${coupon.id}/`,
           formData
         );
         if (response.data.status === 200) {
@@ -79,7 +80,7 @@ export function CouponModal({ isOpen, onClose, onSuccess, coupon }: CouponModalP
       } else {
         // Create new coupon
         const response = await axios.post(
-          "http://127.0.0.1:8000/api/v1/main/Bloomora/CreateOffer/",
+          `${API_BASE_URL}/api/v1/main/Bloomora/CreateOffer/`,
           formData
         );
         if (response.data.status === 201) {
