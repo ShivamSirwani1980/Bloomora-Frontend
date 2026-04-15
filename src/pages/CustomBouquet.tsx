@@ -375,7 +375,10 @@ export default function CustomBouquet() {
                       key={flower.name}
                       className="border-b border-border pb-6 last:border-0 last:pb-0"
                     >
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
+                        <h3 className="font-semibold text-lg text-foreground">
+                          {flower.name}
+                        </h3>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground italic">
                             {flower.stock > 0 ? `${flower.stock} stems left` : "Out of Stock"}
